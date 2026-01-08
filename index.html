@@ -145,16 +145,16 @@
 
                 <div class="p-8 overflow-y-auto flex-1">
                     <div class="mb-8">
-                        <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-4">Tasks</h4>
+                        <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-4">Tasks (Click to Edit / ⮕ Move)</h4>
                         <ul id="modalTaskList" class="space-y-3"></ul>
                     </div>
                     <div class="mb-8">
                         <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-2">Notes</h4>
                         <textarea id="modalNote" rows="2" placeholder="Write something..." 
-                                  class="w-full text-sm bg-gray-50 border-none rounded-2xl p-4 focus:ring-2 focus:ring-opacity-50 dynamic-border outline-none"></textarea>
+                                  class="w-full text-sm bg-gray-50 border-none rounded-2xl p-4 focus:ring-2 focus:ring-opacity-50 dynamic-border outline-none shadow-inner"></textarea>
                     </div>
-                    <div class="dynamic-soft-bg p-5 rounded-[1.5rem]">
-                        <h4 class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">Add Item</h4>
+                    <div class="dynamic-soft-bg p-5 rounded-[1.5rem] border border-white">
+                        <h4 id="inputStatusLabel" class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">Add Item</h4>
                         <div class="flex flex-col gap-3">
                             <div class="flex gap-2">
                                 <input type="time" id="modalTime" class="w-32 bg-white border-none rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm">
@@ -162,13 +162,42 @@
                             </div>
                             <input type="text" id="modalInput" placeholder="Task name..." 
                                    class="w-full bg-white border-none rounded-xl px-4 py-2.5 text-sm outline-none shadow-sm">
-                            <button onclick="addTaskFromModal()" class="dynamic-btn text-white w-full py-3 rounded-xl text-xs font-bold shadow-lg">Add to List</button>
+                            <div class="flex gap-2">
+                                <button id="modalActionBtn" onclick="addTaskFromModal()" class="dynamic-btn text-white flex-1 py-3 rounded-xl text-xs font-bold shadow-lg transition hover:brightness-110">Add to List</button>
+                                <button id="cancelEditBtn" onclick="clearInputFields()" class="hidden bg-gray-200 text-gray-500 px-4 py-3 rounded-xl text-xs font-bold shadow-sm transition hover:bg-gray-300">Cancel</button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="p-6 bg-white border-t border-gray-50 flex justify-end">
+                <div class="p-6 bg-white border-t border-gray-50 flex justify-end gap-2">
+                    <button onclick="exportData()" class="px-5 py-3 rounded-2xl font-bold border border-gray-200 text-gray-400 hover:bg-gray-50 transition text-sm">Backup Text</button>
                     <button onclick="saveDayData()" id="saveBtn" class="bg-gray-900 text-white px-10 py-3 rounded-2xl font-bold hover:bg-black transition shadow-xl">Save & Sync</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 備份文字顯示彈窗 -->
+        <div id="exportModal" class="fixed inset-0 bg-black/60 hidden z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 flex flex-col max-h-[80vh]">
+                <h3 class="text-lg font-bold mb-2">Manual Data Backup</h3>
+                <p class="text-xs text-gray-400 mb-4">Copy the text below and save it to a .txt file on your computer.</p>
+                <textarea id="exportArea" readonly class="flex-1 w-full p-4 bg-gray-50 border-none rounded-2xl mb-6 outline-none text-[10px] font-mono shadow-inner"></textarea>
+                <div class="flex gap-3">
+                    <button onclick="document.getElementById('exportModal').classList.add('hidden')" class="flex-1 py-3 text-xs font-bold bg-gray-900 text-white rounded-xl shadow-lg">Done</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 移動事項專用日期選擇框 -->
+        <div id="moveModal" class="fixed inset-0 bg-black/60 hidden z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl border border-gray-100">
+                <h3 class="text-lg font-bold mb-4">Move Task To...</h3>
+                <p id="movingTaskText" class="text-xs text-gray-400 mb-6 truncate italic"></p>
+                <input type="date" id="newDateTarget" class="w-full p-4 bg-gray-50 border-none rounded-2xl mb-6 outline-none focus:ring-2 dynamic-border">
+                <div class="flex gap-3">
+                    <button onclick="closeMoveModal()" class="flex-1 py-3 text-xs font-bold text-gray-400 hover:bg-gray-50 rounded-xl transition">Cancel</button>
+                    <button onclick="confirmMoveTask()" class="flex-1 py-3 text-xs font-bold dynamic-btn text-white rounded-xl shadow-lg">Confirm Move</button>
                 </div>
             </div>
         </div>
@@ -181,10 +210,12 @@
 
         const firebaseConfig = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
         let app, auth, db, user, appId = "yizzy-planner-v2";
-        let allData = {};
+        let allData = JSON.parse(localStorage.getItem('yizzy_backup_data') || '{}'); 
         let currentView = 'calendar';
         let viewDate = new Date();
         let selectedDateStr = "";
+        let editingIndex = -1; 
+        let movingIndex = -1;
 
         const holidays2026 = { "2026-0-1": "元旦", "2026-1-16": "除夕", "2026-1-17": "春節", "2026-1-28": "和平紀念日" };
         const monthNamesEng = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -205,7 +236,10 @@
                 if (user) {
                     const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
                     onSnapshot(userDocRef, (docSnap) => {
-                        if (docSnap.exists()) allData = docSnap.data().content || {};
+                        if (docSnap.exists()) {
+                            allData = docSnap.data().content || {};
+                            localStorage.setItem('yizzy_backup_data', JSON.stringify(allData));
+                        }
                         document.getElementById('loading').style.display = 'none';
                         renderView();
                     });
@@ -230,15 +264,12 @@
             listEl.innerHTML = '';
             
             let pendingItems = [];
-            // 掃描整個月
             for (let d = 1; d <= 31; d++) {
                 const dateStr = `${year}-${month}-${d}`;
                 const data = allData[dateStr];
                 if (data && data.tasks) {
-                    data.tasks.forEach((t, idx) => {
-                        if (!t.completed) {
-                            pendingItems.push({ ...t, date: d, dateStr: dateStr });
-                        }
+                    data.tasks.forEach((t) => {
+                        if (!t.completed) pendingItems.push({ ...t, date: d, dateStr: dateStr });
                     });
                 }
             }
@@ -263,8 +294,8 @@
 
         window.switchView = (view) => {
             currentView = view;
-            document.getElementById('btnCal').className = view === 'calendar' ? "px-8 py-2 rounded-xl text-sm font-bold transition-all dynamic-btn text-white shadow-md" : "px-8 py-2 rounded-xl text-sm font-bold transition-all text-gray-400";
-            document.getElementById('btnWeek').className = view === 'week' ? "px-8 py-2 rounded-xl text-sm font-bold transition-all dynamic-btn text-white shadow-md" : "px-8 py-2 rounded-xl text-sm font-bold transition-all text-gray-400";
+            document.getElementById('btnCal').className = view === 'calendar' ? "px-8 py-2 rounded-xl text-sm font-bold transition-all dynamic-btn text-white shadow-md" : "px-8 py-2 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-gray-600";
+            document.getElementById('btnWeek').className = view === 'week' ? "px-8 py-2 rounded-xl text-sm font-bold transition-all dynamic-btn text-white shadow-md" : "px-8 py-2 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-gray-600";
             document.getElementById('calendarContainer').classList.toggle('hidden', view !== 'calendar');
             document.getElementById('weekContainer').classList.toggle('hidden', view !== 'week');
             renderView();
@@ -291,7 +322,6 @@
         function renderCalendar() {
             const year = viewDate.getFullYear(), month = viewDate.getMonth();
             document.getElementById('viewTitle').innerText = monthNamesEng[month];
-            
             let firstDay = new Date(year, month, 1).getDay();
             firstDay = firstDay === 0 ? 6 : firstDay - 1;
             const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -306,18 +336,13 @@
                 const dateStr = `${year}-${month}-${d}`;
                 const holiday = holidays2026[dateStr];
                 const dayData = allData[dateStr];
-                
                 const dayEl = document.createElement('div');
                 dayEl.className = `calendar-day group relative ${(new Date(year,month,d).getDay() % 6 === 0) ? 'bg-gray-100/40' : 'bg-white/50'} hover:bg-white cursor-pointer p-1.5 flex flex-col transition-all rounded-2xl shadow-sm border border-transparent overflow-hidden`;
                 if (dateStr === todayStr) dayEl.classList.add('ring-2', 'ring-white', 'dynamic-border', 'bg-white');
 
                 let tasksPreview = '';
                 if (dayData && dayData.tasks) {
-                    tasksPreview = dayData.tasks.slice(0, 2).map(t => `
-                        <div class="task-preview-text ${t.completed ? 'opacity-30' : ''}">
-                            • ${t.text}
-                        </div>
-                    `).join('');
+                    tasksPreview = dayData.tasks.slice(0, 2).map(t => `<div class="task-preview-text ${t.completed ? 'opacity-30' : ''}">• ${t.text}</div>`).join('');
                 }
 
                 dayEl.innerHTML = `
@@ -387,6 +412,7 @@
 
         window.openModal = (dateStr) => {
             selectedDateStr = dateStr;
+            clearInputFields();
             const [y, m, d] = dateStr.split('-');
             const holiday = holidays2026[dateStr];
             document.getElementById('modalDateTitle').innerText = `${monthNamesEng[m]} ${d}, ${y}${holiday ? ' (' + holiday + ')' : ''}`;
@@ -402,25 +428,79 @@
             list.innerHTML = tasks.length ? '' : '<li class="text-gray-300 text-xs italic text-center py-6">No tasks added</li>';
             tasks.forEach((task, index) => {
                 const li = document.createElement('li');
-                li.className = "flex items-center justify-between bg-gray-50/50 p-4 rounded-2xl group";
+                li.className = `flex items-center justify-between p-4 rounded-2xl group transition-all ${editingIndex === index ? 'ring-2 dynamic-border bg-white shadow-md' : 'bg-gray-50/50'}`;
                 li.innerHTML = `
-                    <div class="flex items-center gap-4 cursor-pointer flex-1" onclick="toggleTask(${index})">
-                        <div class="w-6 h-6 border-2 rounded-xl flex items-center justify-center transition-all ${task.completed ? 'dynamic-btn border-transparent' : 'border-gray-200 bg-white'}">
+                    <div class="flex items-center gap-4 cursor-pointer flex-1 min-w-0">
+                        <div class="w-6 h-6 border-2 rounded-xl flex items-center justify-center transition-all ${task.completed ? 'dynamic-btn border-transparent' : 'border-gray-200 bg-white'}" onclick="event.stopPropagation(); toggleTask(${index})">
                             ${task.completed ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3" stroke-linecap="round"/></svg>' : ''}
                         </div>
-                        <div class="flex flex-col">
+                        <div class="flex flex-col flex-1 min-w-0" onclick="prepareEditTask(${index})">
                             <div class="flex items-center gap-2">
                                 ${task.time ? `<span class="text-[10px] font-bold dynamic-text">${task.time}</span>` : ''}
                                 ${task.deadline ? `<span class="text-[9px] text-gray-400">Due: ${task.deadline}</span>` : ''}
                             </div>
-                            <span class="text-sm font-semibold ${task.completed ? 'task-done text-gray-300' : 'text-gray-600'}">${task.text}</span>
+                            <span class="text-sm font-semibold truncate ${task.completed ? 'task-done text-gray-300' : 'text-gray-600'}">${task.text}</span>
                         </div>
                     </div>
-                    <button onclick="deleteTask(${index})" class="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">
-                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
-                    </button>`;
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                        <button onclick="event.stopPropagation(); startMoveTask(${index})" class="text-gray-300 hover:text-blue-500 p-1">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                        <button onclick="event.stopPropagation(); deleteTask(${index})" class="text-gray-300 hover:text-red-400 p-1">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
+                        </button>
+                    </div>`;
                 list.appendChild(li);
             });
+        }
+
+        window.prepareEditTask = (index) => {
+            const task = allData[selectedDateStr].tasks[index];
+            editingIndex = index;
+            document.getElementById('modalInput').value = task.text;
+            document.getElementById('modalTime').value = task.time || "";
+            document.getElementById('modalDeadline').value = task.deadline || "";
+            document.getElementById('inputStatusLabel').innerText = "Editing Item";
+            document.getElementById('modalActionBtn').innerText = "Update Task";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            renderModalTasks(allData[selectedDateStr].tasks);
+            document.getElementById('modalInput').focus();
+        }
+
+        window.startMoveTask = (index) => {
+            movingIndex = index;
+            const task = allData[selectedDateStr].tasks[index];
+            document.getElementById('movingTaskText').innerText = `Moving: ${task.text}`;
+            document.getElementById('moveModal').classList.remove('hidden');
+        }
+
+        window.closeMoveModal = () => {
+            document.getElementById('moveModal').classList.add('hidden');
+            movingIndex = -1;
+        }
+
+        window.confirmMoveTask = async () => {
+            const targetDateInput = document.getElementById('newDateTarget').value;
+            if (!targetDateInput) return;
+            const dateObj = new Date(targetDateInput);
+            const targetDateStr = `${dateObj.getFullYear()}-${dateObj.getMonth()}-${dateObj.getDate()}`;
+            const taskToMove = allData[selectedDateStr].tasks.splice(movingIndex, 1)[0];
+            if (!allData[targetDateStr]) allData[targetDateStr] = { tasks: [], note: "" };
+            allData[targetDateStr].tasks.push(taskToMove);
+            closeMoveModal();
+            renderModalTasks(allData[selectedDateStr].tasks);
+            await saveDayData(true);
+        }
+
+        window.clearInputFields = () => {
+            editingIndex = -1;
+            document.getElementById('modalInput').value = '';
+            document.getElementById('modalTime').value = '';
+            document.getElementById('modalDeadline').value = '';
+            document.getElementById('inputStatusLabel').innerText = "Add Item";
+            document.getElementById('modalActionBtn').innerText = "Add to List";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            if (allData[selectedDateStr]) renderModalTasks(allData[selectedDateStr].tasks);
         }
 
         window.addTaskFromModal = () => {
@@ -429,14 +509,15 @@
             const deadlineInput = document.getElementById('modalDeadline');
             if (!input.value.trim()) return;
             if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
-            allData[selectedDateStr].tasks.push({ 
+            const taskData = { 
                 text: input.value, 
                 time: timeInput.value || null, 
                 deadline: deadlineInput.value || null,
-                completed: false 
-            });
-            input.value = ''; timeInput.value = ''; deadlineInput.value = '';
-            renderModalTasks(allData[selectedDateStr].tasks);
+                completed: editingIndex > -1 ? allData[selectedDateStr].tasks[editingIndex].completed : false 
+            };
+            if (editingIndex > -1) allData[selectedDateStr].tasks[editingIndex] = taskData;
+            else allData[selectedDateStr].tasks.push(taskData);
+            clearInputFields();
         }
 
         window.toggleTask = (i) => {
@@ -446,23 +527,38 @@
 
         window.deleteTask = (i) => {
             allData[selectedDateStr].tasks.splice(i, 1);
-            renderModalTasks(allData[selectedDateStr].tasks);
+            if (editingIndex === i) clearInputFields();
+            else renderModalTasks(allData[selectedDateStr].tasks);
         }
 
-        window.saveDayData = async () => {
+        window.saveDayData = async (quiet = false) => {
             const saveBtn = document.getElementById('saveBtn');
-            saveBtn.innerText = "Saving...";
+            if(!quiet) saveBtn.innerText = "Saving...";
             if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
             allData[selectedDateStr].note = document.getElementById('modalNote').value;
-            if (user) {
+            localStorage.setItem('yizzy_backup_data', JSON.stringify(allData));
+            if (user && firebaseConfig.apiKey) {
                 const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
                 await setDoc(userDocRef, { content: allData, lastUpdated: new Date() });
             }
-            saveBtn.innerText = "Saved!";
-            setTimeout(() => { saveBtn.innerText = "Save & Sync"; closeModal(); renderView(); }, 600);
+            if(!quiet) {
+                saveBtn.innerText = "Saved!";
+                setTimeout(() => { saveBtn.innerText = "Save & Sync"; closeModal(); renderView(); }, 600);
+            } else {
+                renderView();
+            }
         }
 
-        window.closeModal = () => document.getElementById('dayModal').classList.add('hidden');
+        window.exportData = () => {
+            const dataStr = JSON.stringify(allData, null, 2);
+            document.getElementById('exportArea').value = dataStr;
+            document.getElementById('exportModal').classList.remove('hidden');
+        }
+
+        window.closeModal = () => {
+            document.getElementById('dayModal').classList.add('hidden');
+            clearInputFields();
+        }
 
         initApp();
         document.getElementById('modalInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') addTaskFromModal(); });
