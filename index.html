@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yizzy Planner</title>
+    <title>Yizzy Planner - Advanced</title>
 
     <link rel="icon" href="https://emojiapi.dev/api/v1/sparkles/64.png">
     <meta name="theme-color" content="#eab308">
@@ -19,26 +19,27 @@
 
         .accent-font { font-family: 'Dancing Script', cursive; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
-        .calendar-day { aspect-ratio: 1 / 1; transition: all 0.3s ease; }
+        .calendar-day { min-height: 80px; transition: all 0.3s ease; }
         .task-done { text-decoration: line-through; opacity: 0.5; }
-        .dot { height: 6px; width: 6px; border-radius: 50%; }
+        .dot { height: 4px; width: 4px; border-radius: 50%; }
 
-        /* 配色定義：一月與十月均為嫩黃色系 */
-        .theme-0 { --theme-bg: #fefce8; --theme-primary: #eab308; --theme-soft: #fef9c3; }
-        .theme-1 { --theme-bg: #f5f3ff; --theme-primary: #a78bfa; --theme-soft: #ede9fe; } 
-        .theme-2 { --theme-bg: #ecfdf5; --theme-primary: #34d399; --theme-soft: #d1fae5; } 
-        .theme-3 { --theme-bg: #fff7ed; --theme-primary: #fb923c; --theme-soft: #ffedd5; } 
-        .theme-4 { --theme-bg: #f0fdf4; --theme-primary: #4ade80; --theme-soft: #dcfce7; } 
-        .theme-5 { --theme-bg: #fdf2f8; --theme-primary: #f472b6; --theme-soft: #fce7f3; } 
-        .theme-6 { --theme-bg: #eff6ff; --theme-primary: #60a5fa; --theme-soft: #dbeafe; } 
-        .theme-7 { --theme-bg: #fffbeb; --theme-primary: #fbbf24; --theme-soft: #fef3c7; } 
-        .theme-8 { --theme-bg: #fafaf9; --theme-primary: #a8a29e; --theme-soft: #f5f5f4; } 
-        .theme-9 { --theme-bg: #fefce8; --theme-primary: #eab308; --theme-soft: #fef9c3; } 
-        .theme-10 { --theme-bg: #f0f9ff; --theme-primary: #38bdf8; --theme-soft: #e0f2fe; } 
-        .theme-11 { --theme-bg: #f5f5f4; --theme-primary: #78716c; --theme-soft: #e7e5e4; } 
+        /* 配色定義 */
+        .theme-0 { --theme-bg: #fefce8; --theme-primary: #eab308; --theme-soft: #fef9c3; --theme-accent: #854d0e; }
+        .theme-1 { --theme-bg: #f5f3ff; --theme-primary: #a78bfa; --theme-soft: #ede9fe; --theme-accent: #5b21b6; } 
+        .theme-2 { --theme-bg: #ecfdf5; --theme-primary: #34d399; --theme-soft: #d1fae5; --theme-accent: #065f46; } 
+        .theme-3 { --theme-bg: #fff7ed; --theme-primary: #fb923c; --theme-soft: #ffedd5; --theme-accent: #9a3412; } 
+        .theme-4 { --theme-bg: #f0fdf4; --theme-primary: #4ade80; --theme-soft: #dcfce7; --theme-accent: #166534; } 
+        .theme-5 { --theme-bg: #fdf2f8; --theme-primary: #f472b6; --theme-soft: #fce7f3; --theme-accent: #9d174d; } 
+        .theme-6 { --theme-bg: #eff6ff; --theme-primary: #60a5fa; --theme-soft: #dbeafe; --theme-accent: #1e40af; } 
+        .theme-7 { --theme-bg: #fffbeb; --theme-primary: #fbbf24; --theme-soft: #fef3c7; --theme-accent: #92400e; } 
+        .theme-8 { --theme-bg: #fafaf9; --theme-primary: #a8a29e; --theme-soft: #f5f5f4; --theme-accent: #44403c; } 
+        .theme-9 { --theme-bg: #fefce8; --theme-primary: #eab308; --theme-soft: #fef9c3; --theme-accent: #854d0e; } 
+        .theme-10 { --theme-bg: #f0f9ff; --theme-primary: #38bdf8; --theme-soft: #e0f2fe; --theme-accent: #075985; } 
+        .theme-11 { --theme-bg: #f5f5f4; --theme-primary: #78716c; --theme-soft: #e7e5e4; --theme-accent: #292524; } 
 
         .dynamic-bg { background-color: var(--theme-bg); }
         .dynamic-text { color: var(--theme-primary); }
+        .dynamic-accent-text { color: var(--theme-accent); }
         .dynamic-btn { background-color: var(--theme-primary); }
         .dynamic-soft-bg { background-color: var(--theme-soft); }
         .dynamic-border { border-color: var(--theme-primary); }
@@ -47,22 +48,21 @@
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
 
         .loading-overlay {
-            position: fixed;
-            inset: 0;
+            position: fixed; inset: 0;
             background: rgba(255,255,255,0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             z-index: 100;
         }
 
-        .holiday-text {
-            font-size: 8px;
-            color: #f43f5e;
-            font-weight: 700;
-            margin-top: 1px;
-            text-align: center;
-            line-height: 1;
+        .task-preview-text {
+            font-size: 9px;
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            display: block;
+            color: #64748b;
         }
     </style>
 </head>
@@ -70,11 +70,11 @@
     <div id="loading" class="loading-overlay">
         <div class="flex flex-col items-center gap-2">
             <div class="dynamic-text font-bold animate-pulse text-lg tracking-widest">Yizzy Planner</div>
-            <div id="statusMsg" class="text-xs text-gray-400">正在準備您的個人計劃表...</div>
+            <div class="text-xs text-gray-400">正在整理您的精采生活...</div>
         </div>
     </div>
 
-    <div class="max-w-5xl mx-auto space-y-6">
+    <div class="max-w-4xl mx-auto space-y-6">
         <!-- 頂部資訊欄 -->
         <div class="flex flex-col items-center gap-4 mb-4">
             <div id="yearLabel" class="px-4 py-1 bg-white/50 backdrop-blur rounded-full text-xs font-black tracking-[0.3em] text-gray-400 shadow-sm border border-white/50">2026</div>
@@ -88,9 +88,7 @@
         <div class="flex flex-col md:flex-row justify-between items-center bg-white/90 backdrop-blur p-5 rounded-3xl shadow-sm border border-white/50 gap-4">
             <div class="flex items-baseline gap-4">
                 <h2 id="viewTitle" class="text-4xl font-bold tracking-tight text-gray-800 accent-font">January</h2>
-                <div id="yearProgress" class="text-[10px] font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
-                    Day 1 / Remaining 364
-                </div>
+                <div id="yearProgress" class="text-[10px] font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">Day 1 / Remaining 364</div>
             </div>
             <div class="flex gap-3">
                 <button onclick="navigate(-1)" class="p-2.5 hover:bg-gray-50 rounded-full transition border border-gray-100 text-gray-400">
@@ -100,6 +98,19 @@
                 <button onclick="navigate(1)" class="p-2.5 hover:bg-gray-50 rounded-full transition border border-gray-100 text-gray-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
+            </div>
+        </div>
+
+        <!-- 當月未完成彙整 -->
+        <div id="monthlyFocusContainer" class="bg-white/40 backdrop-blur rounded-[2rem] p-6 border border-white/50 shadow-sm">
+            <div class="flex items-center gap-2 mb-4">
+                <div class="p-1.5 dynamic-btn rounded-lg">
+                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <h3 class="text-xs font-black uppercase tracking-[0.2em] dynamic-accent-text">Monthly Focus (Pending)</h3>
+            </div>
+            <div id="monthlyFocusList" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
+                <!-- 自動生成未完成清單 -->
             </div>
         </div>
 
@@ -117,7 +128,7 @@
             <div id="calendarDays" class="calendar-grid gap-2"></div>
         </div>
 
-        <div id="weekContainer" class="hidden grid grid-cols-1 md:grid-cols-7 gap-4"></div>
+        <div id="weekContainer" class="hidden flex flex-col gap-4 pb-12"></div>
 
         <!-- 編輯彈窗 -->
         <div id="dayModal" class="fixed inset-0 bg-black/30 hidden z-50 flex items-center justify-center p-4 backdrop-blur-md">
@@ -143,21 +154,15 @@
                                   class="w-full text-sm bg-gray-50 border-none rounded-2xl p-4 focus:ring-2 focus:ring-opacity-50 dynamic-border outline-none"></textarea>
                     </div>
                     <div class="dynamic-soft-bg p-5 rounded-[1.5rem]">
-                        <h4 class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">Add Item (Optional Fields)</h4>
+                        <h4 class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">Add Item</h4>
                         <div class="flex flex-col gap-3">
                             <div class="flex gap-2">
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-[9px] font-bold text-gray-400 px-1">Time</label>
-                                    <input type="time" id="modalTime" class="w-32 bg-white border-none rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm text-gray-500 font-medium">
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <label class="text-[9px] font-bold text-gray-400 px-1">Deadline</label>
-                                    <input type="date" id="modalDeadline" class="w-36 bg-white border-none rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm text-gray-500 font-medium">
-                                </div>
+                                <input type="time" id="modalTime" class="w-32 bg-white border-none rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm">
+                                <input type="date" id="modalDeadline" class="flex-1 bg-white border-none rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm">
                             </div>
-                            <input type="text" id="modalInput" placeholder="What needs to be done?" 
+                            <input type="text" id="modalInput" placeholder="Task name..." 
                                    class="w-full bg-white border-none rounded-xl px-4 py-2.5 text-sm outline-none shadow-sm">
-                            <button onclick="addTaskFromModal()" class="dynamic-btn text-white w-full py-3 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-all">Add to List</button>
+                            <button onclick="addTaskFromModal()" class="dynamic-btn text-white w-full py-3 rounded-xl text-xs font-bold shadow-lg">Add to List</button>
                         </div>
                     </div>
                 </div>
@@ -175,19 +180,15 @@
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
-        let app, auth, db, user, appId = "yizzy-planner-v1";
+        let app, auth, db, user, appId = "yizzy-planner-v2";
         let allData = {};
         let currentView = 'calendar';
         let viewDate = new Date();
         let selectedDateStr = "";
 
-        const holidays2026 = {
-            "2026-0-1": "元旦", "2026-1-14": "例假日", "2026-1-15": "小年夜", "2026-1-16": "除夕", "2026-1-17": "春節", "2026-1-18": "春節", "2026-1-19": "春節", "2026-1-20": "春節補假", "2026-1-27": "和平紀念日補假", "2026-1-28": "和平紀念日", "2026-3-4": "兒童節", "2026-3-5": "清明節", "2026-5-19": "端午節", "2026-8-25": "中秋節", "2026-9-10": "國慶日"
-        };
-
+        const holidays2026 = { "2026-0-1": "元旦", "2026-1-16": "除夕", "2026-1-17": "春節", "2026-1-28": "和平紀念日" };
         const monthNamesEng = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         const weekDayEng = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const weekDayShortEng = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
         async function initApp() {
             if (!firebaseConfig.apiKey) {
@@ -212,7 +213,6 @@
             });
         }
 
-        // --- 計日功能 ---
         function updateYearProgress() {
             const now = new Date();
             const year = now.getFullYear();
@@ -220,25 +220,54 @@
             const diff = now - startOfYear;
             const currentDay = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
             const totalDays = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 366 : 365;
-            const remaining = totalDays - currentDay;
-            const progressEl = document.getElementById('yearProgress');
-            progressEl.innerText = `Day ${currentDay} / Remaining ${remaining}`;
+            document.getElementById('yearProgress').innerText = `Day ${currentDay} / Remaining ${totalDays - currentDay}`;
         }
 
-        function updateTheme() {
+        function renderMonthlyFocus() {
+            const year = viewDate.getFullYear();
             const month = viewDate.getMonth();
-            document.body.className = `p-4 md:p-8 dynamic-bg min-h-screen theme-${month}`;
-            document.getElementById('yearLabel').innerText = viewDate.getFullYear();
-            updateYearProgress();
+            const listEl = document.getElementById('monthlyFocusList');
+            listEl.innerHTML = '';
+            
+            let pendingItems = [];
+            // 掃描整個月
+            for (let d = 1; d <= 31; d++) {
+                const dateStr = `${year}-${month}-${d}`;
+                const data = allData[dateStr];
+                if (data && data.tasks) {
+                    data.tasks.forEach((t, idx) => {
+                        if (!t.completed) {
+                            pendingItems.push({ ...t, date: d, dateStr: dateStr });
+                        }
+                    });
+                }
+            }
+
+            if (pendingItems.length === 0) {
+                listEl.innerHTML = '<p class="text-[10px] text-gray-300 italic py-2">All settled for this month! ✨</p>';
+                return;
+            }
+
+            pendingItems.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-2 group cursor-pointer";
+                div.onclick = () => openModal(item.dateStr);
+                div.innerHTML = `
+                    <div class="w-1.5 h-1.5 rounded-full dynamic-btn flex-shrink-0"></div>
+                    <span class="text-[11px] font-bold text-gray-400 w-5 flex-shrink-0">${item.date}</span>
+                    <span class="text-[11px] text-gray-600 truncate flex-1">${item.text}</span>
+                `;
+                listEl.appendChild(div);
+            });
         }
 
-        window.switchView = function(view) {
+        window.switchView = (view) => {
             currentView = view;
-            renderView();
             document.getElementById('btnCal').className = view === 'calendar' ? "px-8 py-2 rounded-xl text-sm font-bold transition-all dynamic-btn text-white shadow-md" : "px-8 py-2 rounded-xl text-sm font-bold transition-all text-gray-400";
             document.getElementById('btnWeek').className = view === 'week' ? "px-8 py-2 rounded-xl text-sm font-bold transition-all dynamic-btn text-white shadow-md" : "px-8 py-2 rounded-xl text-sm font-bold transition-all text-gray-400";
             document.getElementById('calendarContainer').classList.toggle('hidden', view !== 'calendar');
             document.getElementById('weekContainer').classList.toggle('hidden', view !== 'week');
+            renderView();
         }
 
         window.navigate = (step) => {
@@ -250,26 +279,18 @@
         window.goToday = () => { viewDate = new Date(); renderView(); }
 
         function renderView() {
-            updateTheme();
+            const month = viewDate.getMonth();
+            document.body.className = `p-4 md:p-8 dynamic-bg min-h-screen theme-${month}`;
+            document.getElementById('yearLabel').innerText = viewDate.getFullYear();
+            updateYearProgress();
+            renderMonthlyFocus();
             if (currentView === 'calendar') renderCalendar();
             else renderWeek();
         }
 
-        function sortTasks(tasks) {
-            if (!tasks) return [];
-            return [...tasks].sort((a, b) => {
-                if (!a.time && !b.time) return 0;
-                if (!a.time) return 1;
-                if (!b.time) return -1;
-                return a.time.localeCompare(b.time);
-            });
-        }
-
         function renderCalendar() {
             const year = viewDate.getFullYear(), month = viewDate.getMonth();
-            const titleEl = document.getElementById('viewTitle');
-            titleEl.innerText = monthNamesEng[month];
-            titleEl.className = "text-4xl font-bold tracking-tight dynamic-text accent-font";
+            document.getElementById('viewTitle').innerText = monthNamesEng[month];
             
             let firstDay = new Date(year, month, 1).getDay();
             firstDay = firstDay === 0 ? 6 : firstDay - 1;
@@ -278,24 +299,34 @@
             container.innerHTML = '';
 
             for (let i = 0; i < firstDay; i++) container.appendChild(document.createElement('div'));
-            const todayStr = `${new Date().getFullYear()}-${new Date().getMonth()}-${new Date().getDate()}`;
+            const tDate = new Date();
+            const todayStr = `${tDate.getFullYear()}-${tDate.getMonth()}-${tDate.getDate()}`;
 
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${year}-${month}-${d}`;
                 const holiday = holidays2026[dateStr];
                 const dayData = allData[dateStr];
-                const hasData = dayData && (dayData.tasks?.length > 0 || dayData.note);
                 
                 const dayEl = document.createElement('div');
-                dayEl.className = `calendar-day group relative ${(new Date(year,month,d).getDay() % 6 === 0) ? 'bg-gray-100/40' : 'bg-white/50'} hover:bg-white cursor-pointer p-2 flex flex-col items-center justify-center transition-all rounded-2xl shadow-sm border border-transparent`;
+                dayEl.className = `calendar-day group relative ${(new Date(year,month,d).getDay() % 6 === 0) ? 'bg-gray-100/40' : 'bg-white/50'} hover:bg-white cursor-pointer p-1.5 flex flex-col transition-all rounded-2xl shadow-sm border border-transparent overflow-hidden`;
                 if (dateStr === todayStr) dayEl.classList.add('ring-2', 'ring-white', 'dynamic-border', 'bg-white');
 
+                let tasksPreview = '';
+                if (dayData && dayData.tasks) {
+                    tasksPreview = dayData.tasks.slice(0, 2).map(t => `
+                        <div class="task-preview-text ${t.completed ? 'opacity-30' : ''}">
+                            • ${t.text}
+                        </div>
+                    `).join('');
+                }
+
                 dayEl.innerHTML = `
-                    <span class="text-lg font-bold ${holiday ? 'text-rose-400' : (dateStr === todayStr ? 'dynamic-text' : 'text-gray-600')}">${d}</span>
-                    <div class="h-3 flex flex-col items-center overflow-hidden w-full">
-                        ${holiday ? `<span class="holiday-text truncate w-full px-1">${holiday}</span>` : ''}
-                        ${hasData ? '<span class="dot dynamic-btn mt-0.5"></span>' : ''}
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-sm font-bold ${holiday ? 'text-rose-400' : (dateStr === todayStr ? 'dynamic-text' : 'text-gray-600')}">${d}</span>
+                        ${dayData && (dayData.tasks?.length > 0) ? '<span class="dot dynamic-btn"></span>' : ''}
                     </div>
+                    <div class="space-y-0.5">${tasksPreview}</div>
+                    ${holiday ? `<span class="text-[8px] text-rose-400 font-bold truncate mt-auto">${holiday}</span>` : ''}
                 `;
                 dayEl.onclick = () => openModal(dateStr);
                 container.appendChild(dayEl);
@@ -310,7 +341,8 @@
 
             const container = document.getElementById('weekContainer');
             container.innerHTML = '';
-            const todayStr = `${new Date().getFullYear()}-${new Date().getMonth()}-${new Date().getDate()}`;
+            const tDate = new Date();
+            const todayStr = `${tDate.getFullYear()}-${tDate.getMonth()}-${tDate.getDate()}`;
 
             for (let i = 0; i < 7; i++) {
                 const day = new Date(startOfWeek);
@@ -320,28 +352,34 @@
                 const data = allData[dateStr] || { tasks: [], note: "" };
 
                 const card = document.createElement('div');
-                card.className = `backdrop-blur rounded-[1.8rem] border p-5 flex flex-col h-72 transition-all hover:shadow-xl cursor-pointer ${(day.getDay()%6===0) ? 'bg-gray-100/40' : 'bg-white/70'} ${dateStr === todayStr ? 'border-white ring-2 dynamic-border' : 'border-white/50'}`;
+                card.className = `bg-white/80 backdrop-blur rounded-[2rem] border p-6 flex flex-col md:flex-row gap-6 transition-all hover:shadow-lg cursor-pointer ${dateStr === todayStr ? 'border-white ring-2 dynamic-border' : 'border-white/50'}`;
                 card.onclick = () => openModal(dateStr);
 
-                let tasksHtml = sortTasks(data.tasks).slice(0, 4).map(t => `
-                    <div class="flex items-center gap-2 text-[10px] mb-2 truncate">
-                        <div class="w-1.5 h-1.5 rounded-full ${t.completed ? 'dynamic-btn' : 'bg-gray-200'}"></div>
-                        <span class="${t.completed ? 'task-done text-gray-300' : 'text-gray-500 font-medium'}">
-                            ${t.time ? `<span class="dynamic-text font-bold">[${t.time}]</span> ` : ''}${t.text}
-                            ${t.deadline ? `<span class="text-[8px] text-gray-400 ml-1">⌛${t.deadline.split('-').slice(1).join('/')}</span>` : ''}
-                        </span>
+                let tasksHtml = (data.tasks || []).map(t => `
+                    <div class="flex items-start gap-3 py-2 border-b border-gray-50 last:border-none">
+                        <div class="w-5 h-5 rounded-lg flex-shrink-0 border-2 mt-0.5 flex items-center justify-center ${t.completed ? 'dynamic-btn border-transparent' : 'border-gray-100'}">
+                            ${t.completed ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4" stroke-linecap="round"/></svg>' : ''}
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-0.5">
+                                ${t.time ? `<span class="text-[10px] font-black dynamic-text">${t.time}</span>` : ''}
+                                ${t.deadline ? `<span class="text-[9px] text-gray-400 italic">Deadline: ${t.deadline}</span>` : ''}
+                            </div>
+                            <div class="text-sm font-medium ${t.completed ? 'task-done text-gray-300' : 'text-gray-700'}">${t.text}</div>
+                        </div>
                     </div>
                 `).join('');
 
                 card.innerHTML = `
-                    <div class="mb-4">
-                        <div class="flex justify-between items-start">
-                            <div class="text-[10px] font-black text-gray-300 uppercase tracking-widest">${weekDayShortEng[i]}</div>
-                            ${holiday ? `<div class="text-[9px] text-rose-400 font-bold bg-rose-50 px-2 py-0.5 rounded-full">${holiday}</div>` : ''}
-                        </div>
-                        <div class="text-2xl font-black ${holiday ? 'text-rose-400' : (dateStr === todayStr ? 'dynamic-text' : 'text-gray-700')}">${day.getDate()}</div>
+                    <div class="flex md:flex-col items-center md:items-start gap-4 md:w-32 flex-shrink-0">
+                        <div class="text-[10px] font-black text-gray-300 uppercase tracking-widest">${weekDayEng[day.getDay()].slice(0,3)}</div>
+                        <div class="text-3xl font-black ${dateStr === todayStr ? 'dynamic-text' : 'text-gray-700'}">${day.getDate()}</div>
+                        ${holiday ? `<div class="text-[9px] text-rose-400 font-bold bg-rose-50 px-2 py-0.5 rounded-full">${holiday}</div>` : ''}
                     </div>
-                    <div class="flex-1 overflow-hidden">${tasksHtml || '<div class="text-gray-200 text-[10px] italic mt-4">Empty</div>'}</div>
+                    <div class="flex-1">
+                        ${tasksHtml || '<div class="text-gray-200 text-xs italic py-2">Nothing scheduled</div>'}
+                        ${data.note ? `<div class="mt-4 p-3 bg-gray-50 rounded-xl text-xs text-gray-500 italic">“${data.note}”</div>` : ''}
+                    </div>
                 `;
                 container.appendChild(card);
             }
@@ -355,16 +393,16 @@
             document.getElementById('modalDayOfWeek').innerText = weekDayEng[new Date(y, m, d).getDay()];
             const data = allData[selectedDateStr] || { tasks: [], note: "" };
             document.getElementById('modalNote').value = data.note || "";
-            renderModalTasks(data.tasks);
+            renderModalTasks(data.tasks || []);
             document.getElementById('dayModal').classList.remove('hidden');
         }
 
         function renderModalTasks(tasks) {
             const list = document.getElementById('modalTaskList');
-            list.innerHTML = tasks?.length ? '' : '<li class="text-gray-300 text-xs italic text-center py-6">No tasks yet</li>';
-            sortTasks(tasks).forEach((task, index) => {
+            list.innerHTML = tasks.length ? '' : '<li class="text-gray-300 text-xs italic text-center py-6">No tasks added</li>';
+            tasks.forEach((task, index) => {
                 const li = document.createElement('li');
-                li.className = "flex items-center justify-between bg-gray-50/50 p-4 rounded-2xl group hover:bg-gray-50 transition-all";
+                li.className = "flex items-center justify-between bg-gray-50/50 p-4 rounded-2xl group";
                 li.innerHTML = `
                     <div class="flex items-center gap-4 cursor-pointer flex-1" onclick="toggleTask(${index})">
                         <div class="w-6 h-6 border-2 rounded-xl flex items-center justify-center transition-all ${task.completed ? 'dynamic-btn border-transparent' : 'border-gray-200 bg-white'}">
@@ -373,7 +411,7 @@
                         <div class="flex flex-col">
                             <div class="flex items-center gap-2">
                                 ${task.time ? `<span class="text-[10px] font-bold dynamic-text">${task.time}</span>` : ''}
-                                ${task.deadline ? `<span class="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md font-bold italic">Due: ${task.deadline}</span>` : ''}
+                                ${task.deadline ? `<span class="text-[9px] text-gray-400">Due: ${task.deadline}</span>` : ''}
                             </div>
                             <span class="text-sm font-semibold ${task.completed ? 'task-done text-gray-300' : 'text-gray-600'}">${task.text}</span>
                         </div>
@@ -402,31 +440,25 @@
         }
 
         window.toggleTask = (i) => {
-            const sorted = sortTasks(allData[selectedDateStr].tasks);
-            const task = sorted[i];
-            const originalIndex = allData[selectedDateStr].tasks.findIndex(t => t === task);
-            allData[selectedDateStr].tasks[originalIndex].completed = !allData[selectedDateStr].tasks[originalIndex].completed;
+            allData[selectedDateStr].tasks[i].completed = !allData[selectedDateStr].tasks[i].completed;
             renderModalTasks(allData[selectedDateStr].tasks);
         }
 
         window.deleteTask = (i) => {
-            const sorted = sortTasks(allData[selectedDateStr].tasks);
-            const task = sorted[i];
-            const originalIndex = allData[selectedDateStr].tasks.findIndex(t => t === task);
-            allData[selectedDateStr].tasks.splice(originalIndex, 1);
+            allData[selectedDateStr].tasks.splice(i, 1);
             renderModalTasks(allData[selectedDateStr].tasks);
         }
 
         window.saveDayData = async () => {
             const saveBtn = document.getElementById('saveBtn');
-            saveBtn.innerText = "Syncing...";
+            saveBtn.innerText = "Saving...";
             if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
             allData[selectedDateStr].note = document.getElementById('modalNote').value;
             if (user) {
                 const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
                 await setDoc(userDocRef, { content: allData, lastUpdated: new Date() });
             }
-            saveBtn.innerText = "Done!";
+            saveBtn.innerText = "Saved!";
             setTimeout(() => { saveBtn.innerText = "Save & Sync"; closeModal(); renderView(); }, 600);
         }
 
