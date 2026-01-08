@@ -143,13 +143,20 @@
                                   class="w-full text-sm bg-gray-50 border-none rounded-2xl p-4 focus:ring-2 focus:ring-opacity-50 dynamic-border outline-none"></textarea>
                     </div>
                     <div class="dynamic-soft-bg p-5 rounded-[1.5rem]">
-                        <h4 class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">Add Item (Time Optional)</h4>
+                        <h4 class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">Add Item (Optional Fields)</h4>
                         <div class="flex flex-col gap-3">
                             <div class="flex gap-2">
-                                <input type="time" id="modalTime" class="w-32 bg-white border-none rounded-xl px-3 py-2.5 text-sm outline-none shadow-sm text-gray-500 font-medium">
-                                <input type="text" id="modalInput" placeholder="What needs to be done?" 
-                                       class="flex-1 bg-white border-none rounded-xl px-4 py-2.5 text-sm outline-none shadow-sm">
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[9px] font-bold text-gray-400 px-1">Time</label>
+                                    <input type="time" id="modalTime" class="w-32 bg-white border-none rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm text-gray-500 font-medium">
+                                </div>
+                                <div class="flex flex-col gap-1">
+                                    <label class="text-[9px] font-bold text-gray-400 px-1">Deadline</label>
+                                    <input type="date" id="modalDeadline" class="w-36 bg-white border-none rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm text-gray-500 font-medium">
+                                </div>
                             </div>
+                            <input type="text" id="modalInput" placeholder="What needs to be done?" 
+                                   class="w-full bg-white border-none rounded-xl px-4 py-2.5 text-sm outline-none shadow-sm">
                             <button onclick="addTaskFromModal()" class="dynamic-btn text-white w-full py-3 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-all">Add to List</button>
                         </div>
                     </div>
@@ -205,21 +212,15 @@
             });
         }
 
-        // --- 核心修正：計日功能 ---
+        // --- 計日功能 ---
         function updateYearProgress() {
             const now = new Date();
             const year = now.getFullYear();
-            const startOfYear = new Date(year, 0, 1); // 1月1日
-            
-            // 計算兩者之間經過的毫秒數
+            const startOfYear = new Date(year, 0, 1); 
             const diff = now - startOfYear;
-            // 轉換為天數 (加上 1 是因為從 Day 1 開始計)
             const currentDay = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
-            
-            // 判斷閏年
             const totalDays = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 366 : 365;
             const remaining = totalDays - currentDay;
-
             const progressEl = document.getElementById('yearProgress');
             progressEl.innerText = `Day ${currentDay} / Remaining ${remaining}`;
         }
@@ -231,7 +232,6 @@
             updateYearProgress();
         }
 
-        // --- 以下維持功能邏輯 ---
         window.switchView = function(view) {
             currentView = view;
             renderView();
@@ -324,10 +324,11 @@
                 card.onclick = () => openModal(dateStr);
 
                 let tasksHtml = sortTasks(data.tasks).slice(0, 4).map(t => `
-                    <div class="flex items-center gap-2 text-[11px] mb-2 truncate">
+                    <div class="flex items-center gap-2 text-[10px] mb-2 truncate">
                         <div class="w-1.5 h-1.5 rounded-full ${t.completed ? 'dynamic-btn' : 'bg-gray-200'}"></div>
                         <span class="${t.completed ? 'task-done text-gray-300' : 'text-gray-500 font-medium'}">
                             ${t.time ? `<span class="dynamic-text font-bold">[${t.time}]</span> ` : ''}${t.text}
+                            ${t.deadline ? `<span class="text-[8px] text-gray-400 ml-1">⌛${t.deadline.split('-').slice(1).join('/')}</span>` : ''}
                         </span>
                     </div>
                 `).join('');
@@ -370,7 +371,10 @@
                             ${task.completed ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3" stroke-linecap="round"/></svg>' : ''}
                         </div>
                         <div class="flex flex-col">
-                            ${task.time ? `<span class="text-[10px] font-bold dynamic-text">${task.time}</span>` : ''}
+                            <div class="flex items-center gap-2">
+                                ${task.time ? `<span class="text-[10px] font-bold dynamic-text">${task.time}</span>` : ''}
+                                ${task.deadline ? `<span class="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md font-bold italic">Due: ${task.deadline}</span>` : ''}
+                            </div>
                             <span class="text-sm font-semibold ${task.completed ? 'task-done text-gray-300' : 'text-gray-600'}">${task.text}</span>
                         </div>
                     </div>
@@ -384,10 +388,16 @@
         window.addTaskFromModal = () => {
             const input = document.getElementById('modalInput');
             const timeInput = document.getElementById('modalTime');
+            const deadlineInput = document.getElementById('modalDeadline');
             if (!input.value.trim()) return;
             if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
-            allData[selectedDateStr].tasks.push({ text: input.value, time: timeInput.value || null, completed: false });
-            input.value = ''; timeInput.value = '';
+            allData[selectedDateStr].tasks.push({ 
+                text: input.value, 
+                time: timeInput.value || null, 
+                deadline: deadlineInput.value || null,
+                completed: false 
+            });
+            input.value = ''; timeInput.value = ''; deadlineInput.value = '';
             renderModalTasks(allData[selectedDateStr].tasks);
         }
 
