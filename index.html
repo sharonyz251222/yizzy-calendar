@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yizzy Planner</title>
 
-<link rel="icon" href="https://emojiapi.dev/api/v1/sparkles/64.png">
-<meta name="theme-color" content="#fb7185">
-<meta name="description" content="柔和月色風格的月曆代辦系統，支援週 / 月檢視與雲端同步">
+    <link rel="icon" href="https://emojiapi.dev/api/v1/sparkles/64.png">
+    <meta name="theme-color" content="#eab308">
+    <meta name="description" content="柔和月色風格的月曆代辦系統，支援週 / 月檢視與雲端同步">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 載入標準字體與 Accent 字體 */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Dancing+Script:wght@700&family=Inter:wght@400;700&display=swap');
         
         body {
@@ -20,20 +19,13 @@
         }
 
         .accent-font { font-family: 'Dancing Script', cursive; }
-
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
-
-        .calendar-day {
-            aspect-ratio: 1 / 1;
-            transition: all 0.3s ease;
-        }
-
+        .calendar-day { aspect-ratio: 1 / 1; transition: all 0.3s ease; }
         .task-done { text-decoration: line-through; opacity: 0.5; }
-
         .dot { height: 5px; width: 5px; border-radius: 50%; }
 
-        /* 月份配色定義 - 保持原始設計 */
-        .theme-0 { --theme-bg: #fff1f2; --theme-primary: #fb7185; --theme-soft: #ffe4e6; } 
+        /* 配色定義更新：一月與十月均改為嫩黃色系 */
+        .theme-0 { --theme-bg: #fefce8; --theme-primary: #eab308; --theme-soft: #fef9c3; } /* 一月：嫩黃 */
         .theme-1 { --theme-bg: #f5f3ff; --theme-primary: #a78bfa; --theme-soft: #ede9fe; } 
         .theme-2 { --theme-bg: #ecfdf5; --theme-primary: #34d399; --theme-soft: #d1fae5; } 
         .theme-3 { --theme-bg: #fff7ed; --theme-primary: #fb923c; --theme-soft: #ffedd5; } 
@@ -42,7 +34,7 @@
         .theme-6 { --theme-bg: #eff6ff; --theme-primary: #60a5fa; --theme-soft: #dbeafe; } 
         .theme-7 { --theme-bg: #fffbeb; --theme-primary: #fbbf24; --theme-soft: #fef3c7; } 
         .theme-8 { --theme-bg: #fafaf9; --theme-primary: #a8a29e; --theme-soft: #f5f5f4; } 
-        .theme-9 { --theme-bg: #fef2f2; --theme-primary: #f87171; --theme-soft: #fee2e2; } 
+        .theme-9 { --theme-bg: #fefce8; --theme-primary: #eab308; --theme-soft: #fef9c3; } /* 十月：同步改為嫩黃 */
         .theme-10 { --theme-bg: #f0f9ff; --theme-primary: #38bdf8; --theme-soft: #e0f2fe; } 
         .theme-11 { --theme-bg: #f5f5f4; --theme-primary: #78716c; --theme-soft: #e7e5e4; } 
 
@@ -58,7 +50,7 @@
         .loading-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.95);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -73,18 +65,23 @@
             text-align: center;
             line-height: 1;
         }
+
+        input[type="time"] {
+            appearance: none;
+            -webkit-appearance: none;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8 dynamic-bg min-h-screen">
     <div id="loading" class="loading-overlay">
         <div class="flex flex-col items-center gap-2">
-            <div class="text-gray-400 font-bold animate-pulse text-lg">正在啟動雲端同步...</div>
-            <div id="statusMsg" class="text-xs text-gray-400">正在確認身分</div>
+            <div class="dynamic-text font-bold animate-pulse text-lg tracking-widest">Yizzy Planner</div>
+            <div id="statusMsg" class="text-xs text-gray-400">正在準備您的個人計劃表...</div>
         </div>
     </div>
 
     <div class="max-w-5xl mx-auto space-y-6">
-        <!-- 頂部切換與年份標籤 -->
+        <!-- 視圖切換 -->
         <div class="flex flex-col items-center gap-4 mb-4">
             <div id="yearLabel" class="px-4 py-1 bg-white/50 backdrop-blur rounded-full text-xs font-black tracking-[0.3em] text-gray-400 shadow-sm border border-white/50">2026</div>
             <div class="inline-flex bg-white/80 backdrop-blur p-1 rounded-2xl shadow-sm border border-white/50">
@@ -93,13 +90,11 @@
             </div>
         </div>
 
-        <!-- 控制列 -->
+        <!-- 標題與導覽 -->
         <div class="flex flex-col md:flex-row justify-between items-center bg-white/90 backdrop-blur p-5 rounded-3xl shadow-sm border border-white/50 gap-4">
             <div class="flex items-baseline gap-4">
                 <h2 id="viewTitle" class="text-4xl font-bold tracking-tight text-gray-800 accent-font">January</h2>
-                <div id="yearProgress" class="text-[10px] font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
-                    Day 0 / Remaining 0
-                </div>
+                <div id="yearProgress" class="text-[10px] font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">Day 0 / Remaining 0</div>
             </div>
             <div class="flex gap-3">
                 <button onclick="navigate(-1)" class="p-2.5 hover:bg-gray-50 rounded-full transition border border-gray-100 text-gray-400">
@@ -112,7 +107,7 @@
             </div>
         </div>
 
-        <!-- 主要檢視內容容器 -->
+        <!-- 容器區 -->
         <div id="calendarContainer" class="bg-white/80 backdrop-blur rounded-[2rem] shadow-xl p-6 border border-white/50">
             <div class="calendar-grid mb-4 border-b border-gray-50 pb-2">
                 <div class="text-center py-2 text-[10px] font-black uppercase tracking-widest text-gray-300">Mon</div>
@@ -128,7 +123,7 @@
 
         <div id="weekContainer" class="hidden grid grid-cols-1 md:grid-cols-7 gap-4"></div>
 
-        <!-- Modal 彈窗 -->
+        <!-- 編輯彈窗 -->
         <div id="dayModal" class="fixed inset-0 bg-black/30 hidden z-50 flex items-center justify-center p-4 backdrop-blur-md transition-all">
             <div class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col border border-white">
                 <div class="dynamic-btn p-7 text-white flex justify-between items-center">
@@ -148,15 +143,18 @@
                     </div>
                     <div class="mb-8">
                         <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-2">備註</h4>
-                        <textarea id="modalNote" rows="2" placeholder="備註一些事情..." 
+                        <textarea id="modalNote" rows="2" placeholder="寫下一些筆記..." 
                                   class="w-full text-sm bg-gray-50 border-none rounded-2xl p-4 focus:ring-2 focus:ring-opacity-50 dynamic-border outline-none transition-all"></textarea>
                     </div>
                     <div class="dynamic-soft-bg p-5 rounded-[1.5rem]">
-                        <h4 class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">新增事項</h4>
-                        <div class="flex gap-2">
-                            <input type="text" id="modalInput" placeholder="要做什麼？" 
-                                   class="flex-1 bg-white border-none rounded-xl px-4 py-2.5 text-sm outline-none shadow-sm">
-                            <button onclick="addTaskFromModal()" class="dynamic-btn text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-all">新增</button>
+                        <h4 class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">新增事項 (時間選填)</h4>
+                        <div class="flex flex-col gap-3">
+                            <div class="flex gap-2">
+                                <input type="time" id="modalTime" class="w-32 bg-white border-none rounded-xl px-3 py-2.5 text-sm outline-none shadow-sm text-gray-500 font-medium">
+                                <input type="text" id="modalInput" placeholder="計畫做什麼？" 
+                                       class="flex-1 bg-white border-none rounded-xl px-4 py-2.5 text-sm outline-none shadow-sm">
+                            </div>
+                            <button onclick="addTaskFromModal()" class="dynamic-btn text-white w-full py-3 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-all">新增到清單</button>
                         </div>
                     </div>
                 </div>
@@ -168,31 +166,20 @@
         </div>
     </div>
 
-    <!-- Firebase SDK (ESM 導入) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // === 請在此填入你的 Firebase 配置 ===
-        const firebaseConfig = {
-            apiKey: "",
-            authDomain: "",
-            projectId: "",
-            storageBucket: "",
-            messagingSenderId: "",
-            appId: ""
-        };
-        // ================================
+        // === Firebase 配置 (保持原本邏輯) ===
+        const firebaseConfig = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
 
-        // 初始化變數
-        let app, auth, db, user, appId = "moonlight-todo-v1";
+        let app, auth, db, user, appId = "yizzy-planner-v1";
         let allData = {};
         let currentView = 'calendar';
         let viewDate = new Date();
         let selectedDateStr = "";
 
-        // 2026 國定假日資料
         const holidays2026 = {
             "2026-0-1": "元旦", "2026-1-14": "例假日", "2026-1-15": "小年夜", "2026-1-16": "除夕", "2026-1-17": "春節", "2026-1-18": "春節", "2026-1-19": "春節", "2026-1-20": "春節補假", "2026-1-27": "和平紀念日補假", "2026-1-28": "和平紀念日", "2026-3-4": "兒童節", "2026-3-5": "清明節", "2026-5-19": "端午節", "2026-8-25": "中秋節", "2026-9-10": "國慶日"
         };
@@ -202,31 +189,21 @@
         const weekDayShortEng = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
         async function initApp() {
-            // 如果沒填 key，則跳過 Firebase 直接啟動本地版
             if (!firebaseConfig.apiKey) {
-                console.warn("Firebase API Key is missing. Running in Local Mode.");
                 document.getElementById('loading').style.display = 'none';
                 renderView();
                 return;
             }
-
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
-
-            document.getElementById('statusMsg').innerText = "正在匿名登錄...";
             await signInAnonymously(auth);
-
             onAuthStateChanged(auth, (u) => {
                 user = u;
                 if (user) {
-                    document.getElementById('statusMsg').innerText = "正在獲取雲端清單...";
-                    // 固定路徑： /artifacts/{appId}/users/{userId}/settings/mainData
                     const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
                     onSnapshot(userDocRef, (docSnap) => {
-                        if (docSnap.exists()) {
-                            allData = docSnap.data().content || {};
-                        }
+                        if (docSnap.exists()) allData = docSnap.data().content || {};
                         document.getElementById('loading').style.display = 'none';
                         renderView();
                     });
@@ -237,41 +214,23 @@
         window.saveToCloud = async function() {
             if (!user) return;
             const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
-            try {
-                await setDoc(userDocRef, { content: allData, lastUpdated: new Date() });
-            } catch (err) { console.error("Cloud Save Error", err); }
+            try { await setDoc(userDocRef, { content: allData, lastUpdated: new Date() }); } 
+            catch (err) { console.error(err); }
         }
-
-        // --- 排版與設計邏輯 (保持原有設計) ---
 
         function updateTheme() {
             const month = viewDate.getMonth();
             document.body.className = `p-4 md:p-8 dynamic-bg min-h-screen theme-${month}`;
             document.getElementById('yearLabel').innerText = viewDate.getFullYear();
-            
-            const now = new Date();
-            const start = new Date(now.getFullYear(), 0, 0);
-            const diff = now - start;
-            const totalDays = (now.getFullYear() % 4 === 0) ? 366 : 365;
-            const passed = Math.floor(diff / (1000 * 60 * 60 * 24));
-            document.getElementById('yearProgress').innerText = `Day ${passed} / Remaining ${totalDays - passed}`;
         }
 
         window.switchView = function(view) {
             currentView = view;
-            const btnCal = document.getElementById('btnCal'), btnWeek = document.getElementById('btnWeek');
-            if (view === 'calendar') {
-                btnCal.className = "px-8 py-2 rounded-xl text-sm font-bold transition-all dynamic-btn text-white shadow-md";
-                btnWeek.className = "px-8 py-2 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-gray-600";
-                document.getElementById('calendarContainer').classList.remove('hidden');
-                document.getElementById('weekContainer').classList.add('hidden');
-            } else {
-                btnWeek.className = "px-8 py-2 rounded-xl text-sm font-bold transition-all dynamic-btn text-white shadow-md";
-                btnCal.className = "px-8 py-2 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-gray-600";
-                document.getElementById('calendarContainer').classList.add('hidden');
-                document.getElementById('weekContainer').classList.remove('hidden');
-            }
             renderView();
+            document.getElementById('btnCal').className = view === 'calendar' ? "px-8 py-2 rounded-xl text-sm font-bold transition-all dynamic-btn text-white shadow-md" : "px-8 py-2 rounded-xl text-sm font-bold transition-all text-gray-400";
+            document.getElementById('btnWeek').className = view === 'week' ? "px-8 py-2 rounded-xl text-sm font-bold transition-all dynamic-btn text-white shadow-md" : "px-8 py-2 rounded-xl text-sm font-bold transition-all text-gray-400";
+            document.getElementById('calendarContainer').classList.toggle('hidden', view !== 'calendar');
+            document.getElementById('weekContainer').classList.toggle('hidden', view !== 'week');
         }
 
         window.navigate = (step) => {
@@ -288,21 +247,29 @@
             else renderWeek();
         }
 
+        function sortTasks(tasks) {
+            if (!tasks) return [];
+            return [...tasks].sort((a, b) => {
+                if (!a.time && !b.time) return 0;
+                if (!a.time) return 1; // 沒時間的往後排
+                if (!b.time) return -1; // 沒時間的往後排
+                return a.time.localeCompare(b.time);
+            });
+        }
+
         function renderCalendar() {
             const year = viewDate.getFullYear(), month = viewDate.getMonth();
             const titleEl = document.getElementById('viewTitle');
-            titleEl.className = "text-4xl font-bold tracking-tight dynamic-text accent-font";
             titleEl.innerText = monthNamesEng[month];
-
-            let firstDay = new Date(year, month, 1).getDay(); 
-            firstDay = firstDay === 0 ? 6 : firstDay - 1; 
-
+            titleEl.className = "text-4xl font-bold tracking-tight dynamic-text accent-font";
+            
+            let firstDay = new Date(year, month, 1).getDay();
+            firstDay = firstDay === 0 ? 6 : firstDay - 1;
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const container = document.getElementById('calendarDays');
             container.innerHTML = '';
 
             for (let i = 0; i < firstDay; i++) container.appendChild(document.createElement('div'));
-
             const todayStr = `${new Date().getFullYear()}-${new Date().getMonth()}-${new Date().getDate()}`;
 
             for (let d = 1; d <= daysInMonth; d++) {
@@ -312,12 +279,12 @@
                 const hasData = dayData && (dayData.tasks?.length > 0 || dayData.note);
                 
                 const dayEl = document.createElement('div');
-                dayEl.className = `calendar-day group relative ${(new Date(year,month,d).getDay() % 6 === 0) ? 'bg-gray-100/60' : 'bg-white/50'} hover:bg-white cursor-pointer p-2 flex flex-col items-center justify-center transition-all rounded-2xl shadow-sm hover:shadow-md border border-transparent`;
+                dayEl.className = `calendar-day group relative ${(new Date(year,month,d).getDay() % 6 === 0) ? 'bg-gray-100/40' : 'bg-white/50'} hover:bg-white cursor-pointer p-2 flex flex-col items-center justify-center transition-all rounded-2xl shadow-sm border border-transparent`;
                 if (dateStr === todayStr) dayEl.classList.add('ring-2', 'ring-white', 'dynamic-border', 'bg-white');
 
                 dayEl.innerHTML = `
                     <span class="text-lg font-bold ${holiday ? 'text-rose-400' : (dateStr === todayStr ? 'dynamic-text' : 'text-gray-600')}">${d}</span>
-                    <div class="h-3 flex flex-col items-center justify-start overflow-hidden w-full">
+                    <div class="h-3 flex flex-col items-center overflow-hidden w-full">
                         ${holiday ? `<span class="holiday-text truncate w-full px-1">${holiday}</span>` : ''}
                         ${hasData ? '<span class="dot dynamic-btn mt-0.5"></span>' : ''}
                     </div>
@@ -331,9 +298,7 @@
             const startOfWeek = new Date(viewDate);
             const dayOffset = startOfWeek.getDay() === 0 ? 6 : startOfWeek.getDay() - 1;
             startOfWeek.setDate(viewDate.getDate() - dayOffset);
-            
-            document.getElementById('viewTitle').className = "text-2xl font-bold dynamic-text";
-            document.getElementById('viewTitle').innerText = `${monthNamesEng[startOfWeek.getMonth()]} ${startOfWeek.getDate()} - ${startOfWeek.getFullYear()}`;
+            document.getElementById('viewTitle').innerText = `${monthNamesEng[startOfWeek.getMonth()]} ${startOfWeek.getDate()}`;
 
             const container = document.getElementById('weekContainer');
             container.innerHTML = '';
@@ -347,13 +312,15 @@
                 const data = allData[dateStr] || { tasks: [], note: "" };
 
                 const card = document.createElement('div');
-                card.className = `backdrop-blur rounded-[1.8rem] border p-5 flex flex-col h-72 transition-all hover:shadow-xl cursor-pointer ${(day.getDay()%6===0) ? 'bg-gray-100/60' : 'bg-white/70'} ${dateStr === todayStr ? 'border-white ring-2 dynamic-border' : 'border-white/50 shadow-sm'}`;
+                card.className = `backdrop-blur rounded-[1.8rem] border p-5 flex flex-col h-72 transition-all hover:shadow-xl cursor-pointer ${(day.getDay()%6===0) ? 'bg-gray-100/40' : 'bg-white/70'} ${dateStr === todayStr ? 'border-white ring-2 dynamic-border' : 'border-white/50'}`;
                 card.onclick = () => openModal(dateStr);
 
-                let tasksHtml = data.tasks.slice(0, 4).map(t => `
+                let tasksHtml = sortTasks(data.tasks).slice(0, 4).map(t => `
                     <div class="flex items-center gap-2 text-[11px] mb-2 truncate">
                         <div class="w-1.5 h-1.5 rounded-full ${t.completed ? 'dynamic-btn' : 'bg-gray-200'}"></div>
-                        <span class="${t.completed ? 'task-done text-gray-300' : 'text-gray-500 font-medium'}">${t.text}</span>
+                        <span class="${t.completed ? 'task-done text-gray-300' : 'text-gray-500 font-medium'}">
+                            ${t.time ? `<span class="dynamic-text font-bold">[${t.time}]</span> ` : ''}${t.text}
+                        </span>
                     </div>
                 `).join('');
 
@@ -365,9 +332,7 @@
                         </div>
                         <div class="text-2xl font-black ${holiday ? 'text-rose-400' : (dateStr === todayStr ? 'dynamic-text' : 'text-gray-700')}">${day.getDate()}</div>
                     </div>
-                    <div class="flex-1 overflow-hidden">
-                        ${tasksHtml || '<div class="text-gray-200 text-[10px] italic mt-4">Empty</div>'}
-                    </div>
+                    <div class="flex-1 overflow-hidden">${tasksHtml || '<div class="text-gray-200 text-[10px] italic mt-4">Empty</div>'}</div>
                 `;
                 container.appendChild(card);
             }
@@ -387,8 +352,9 @@
 
         function renderModalTasks(tasks) {
             const list = document.getElementById('modalTaskList');
-            list.innerHTML = tasks?.length ? '' : '<li class="text-gray-300 text-xs italic text-center py-6">無事項</li>';
-            tasks?.forEach((task, index) => {
+            list.innerHTML = tasks?.length ? '' : '<li class="text-gray-300 text-xs italic text-center py-6">清單是空的</li>';
+            
+            sortTasks(tasks).forEach((task, index) => {
                 const li = document.createElement('li');
                 li.className = "flex items-center justify-between bg-gray-50/50 p-4 rounded-2xl group hover:bg-gray-50 transition-all border border-transparent";
                 li.innerHTML = `
@@ -396,7 +362,10 @@
                         <div class="w-6 h-6 border-2 rounded-xl flex items-center justify-center transition-all ${task.completed ? 'dynamic-btn border-transparent' : 'border-gray-200 bg-white'}">
                             ${task.completed ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3" stroke-linecap="round"/></svg>' : ''}
                         </div>
-                        <span class="text-sm font-semibold ${task.completed ? 'task-done text-gray-300' : 'text-gray-600'}">${task.text}</span>
+                        <div class="flex flex-col">
+                            ${task.time ? `<span class="text-[10px] font-bold dynamic-text">${task.time}</span>` : ''}
+                            <span class="text-sm font-semibold ${task.completed ? 'task-done text-gray-300' : 'text-gray-600'}">${task.text}</span>
+                        </div>
                     </div>
                     <button onclick="deleteTask(${index})" class="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition">
                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
@@ -407,19 +376,41 @@
 
         window.addTaskFromModal = () => {
             const input = document.getElementById('modalInput');
+            const timeInput = document.getElementById('modalTime');
             if (!input.value.trim()) return;
             if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
-            allData[selectedDateStr].tasks.push({ text: input.value, completed: false });
-            input.value = ''; renderModalTasks(allData[selectedDateStr].tasks);
+            
+            allData[selectedDateStr].tasks.push({ 
+                text: input.value, 
+                time: timeInput.value || null, // 沒填寫則為 null
+                completed: false 
+            });
+            input.value = ''; timeInput.value = '';
+            renderModalTasks(allData[selectedDateStr].tasks);
         }
 
-        window.toggleTask = (i) => { allData[selectedDateStr].tasks[i].completed = !allData[selectedDateStr].tasks[i].completed; renderModalTasks(allData[selectedDateStr].tasks); }
-        window.deleteTask = (i) => { allData[selectedDateStr].tasks.splice(i, 1); renderModalTasks(allData[selectedDateStr].tasks); }
+        window.toggleTask = (i) => { 
+            // 由於渲染時有排序，切換狀態前需先獲取正確的原始任務索引
+            const sorted = sortTasks(allData[selectedDateStr].tasks);
+            const task = sorted[i];
+            const originalIndex = allData[selectedDateStr].tasks.findIndex(t => t === task);
+            allData[selectedDateStr].tasks[originalIndex].completed = !allData[selectedDateStr].tasks[originalIndex].completed; 
+            renderModalTasks(allData[selectedDateStr].tasks); 
+        }
+
+        window.deleteTask = (i) => { 
+            const sorted = sortTasks(allData[selectedDateStr].tasks);
+            const task = sorted[i];
+            const originalIndex = allData[selectedDateStr].tasks.findIndex(t => t === task);
+            allData[selectedDateStr].tasks.splice(originalIndex, 1); 
+            renderModalTasks(allData[selectedDateStr].tasks); 
+        }
+
         window.closeModal = () => document.getElementById('dayModal').classList.add('hidden');
 
         window.saveDayData = async () => {
             const saveBtn = document.getElementById('saveBtn');
-            saveBtn.innerText = "正在同步...";
+            saveBtn.innerText = "同步中...";
             if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
             allData[selectedDateStr].note = document.getElementById('modalNote').value;
             await saveToCloud();
@@ -427,11 +418,8 @@
             setTimeout(() => { saveBtn.innerText = "儲存並同步"; closeModal(); renderView(); }, 600);
         }
 
-        // 啟動應用
         initApp();
         document.getElementById('modalInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') addTaskFromModal(); });
     </script>
 </body>
-
 </html>
-
