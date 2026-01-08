@@ -172,8 +172,14 @@
                     
                     <div class="mb-8">
                         <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-2">本日備註</h4>
-                        <textarea id="modalNote" rows="2" placeholder="在此輸入備註..." class="w-full text-sm bg-gray-50 border-none rounded-2xl p-4 focus:ring-2 focus:ring-opacity-50 dynamic-border outline-none shadow-inner"></textarea>
-                    </div>
+                        <textarea
+  id="modalNote"
+  rows="2"
+  placeholder="在此輸入備註..."
+  oninput="allData[selectedDateStr].note = this.value; syncToCloudDebounced();"
+  class="w-full text-sm bg-gray-50 border-none rounded-2xl p-4 focus:ring-2 focus:ring-opacity-50 dynamic-border outline-none shadow-inner">
+</textarea>
+
 
                     <div id="inputSection" class="dynamic-soft-bg p-5 rounded-[1.5rem] border border-white">
                         <h4 id="inputStatusLabel" class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">新增項目</h4>
@@ -253,6 +259,23 @@
         };
 
         let allData = JSON.parse(localStorage.getItem('yizzy_local_data') || JSON.stringify(initialData));
+        // ===== 即時雲端同步（防抖）=====
+let syncTimer = null;
+
+function syncToCloudDebounced() {
+    if (!user) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(async () => {
+        try {
+            const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'main', 'data');
+            await setDoc(docRef, { content: allData }, { merge: true });
+            localStorage.setItem('yizzy_local_data', JSON.stringify(allData));
+        } catch (e) {
+            console.error("Sync failed", e);
+        }
+    }, 500); // 0.5 秒內多次操作只同步一次
+}
+
         let currentView = 'calendar';
         let viewDate = new Date();
         let selectedDateStr = "";
@@ -452,6 +475,8 @@
             const originalText = status.innerText;
             status.innerText = "已移動至 " + newDateValue;
             setTimeout(() => status.innerText = originalText, 2000);
+            syncToCloudDebounced();
+
         };
 
         window.editTask = (i) => {
@@ -475,41 +500,61 @@
             document.getElementById('cancelEditBtn').classList.add('hidden');
         };
 
-        window.addOrUpdateTask = () => {
-            const text = document.getElementById('modalInput').value;
-            if (!text) return;
-            const time = document.getElementById('modalTime').value;
-            const deadline = document.getElementById('modalDeadline').value;
-            let tasks = allData[selectedDateStr]?.tasks || [];
-            const taskObj = { text, time, deadline, completed: editingIndex > -1 ? tasks[editingIndex].completed : false };
-            if (editingIndex > -1) tasks[editingIndex] = taskObj;
-            else tasks.push(taskObj);
-            allData[selectedDateStr] = { ...allData[selectedDateStr], tasks };
-            renderModalTasks(allData[selectedDateStr].tasks);
-            clearInputFields();
-        };
+       window.addOrUpdateTask = () => {
+    const text = document.getElementById('modalInput').value;
+    if (!text) return;
+
+    const time = document.getElementById('modalTime').value;
+    const deadline = document.getElementById('modalDeadline').value;
+
+    let tasks = allData[selectedDateStr]?.tasks || [];
+    const taskObj = {
+        text,
+        time,
+        deadline,
+        completed: editingIndex > -1 ? tasks[editingIndex].completed : false
+    };
+
+    if (editingIndex > -1) tasks[editingIndex] = taskObj;
+    else tasks.push(taskObj);
+
+    allData[selectedDateStr] = { ...allData[selectedDateStr], tasks };
+
+    renderModalTasks(tasks);
+    clearInputFields();
+    syncToCloudDebounced(); // 👈 即時同步
+};
+
 
         window.toggleTask = (i) => {
-            allData[selectedDateStr].tasks[i].completed = !allData[selectedDateStr].tasks[i].completed;
-            renderModalTasks(allData[selectedDateStr].tasks);
-        };
+    allData[selectedDateStr].tasks[i].completed =
+        !allData[selectedDateStr].tasks[i].completed;
 
-        window.deleteTask = (i) => {
-            allData[selectedDateStr].tasks.splice(i, 1);
-            renderModalTasks(allData[selectedDateStr].tasks);
-        };
+    renderModalTasks(allData[selectedDateStr].tasks);
+    syncToCloudDebounced(); // 👈 即時同步
+};
 
-        window.saveDayData = async () => {
-            if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
-            allData[selectedDateStr].note = document.getElementById('modalNote').value;
-            localStorage.setItem('yizzy_local_data', JSON.stringify(allData));
-            if (user) {
-                const docRef = doc(db, 'artifacts', APP_ID, 'users', user.uid, 'main', 'data');
-                await setDoc(docRef, { content: allData });
-            }
-            renderView();
-            closeModal();
-        };
+
+       window.deleteTask = (i) => {
+    allData[selectedDateStr].tasks.splice(i, 1);
+    renderModalTasks(allData[selectedDateStr].tasks);
+    syncToCloudDebounced(); // 👈 即時同步
+};
+
+
+        window.saveDayData = () => {
+    if (!allData[selectedDateStr]) {
+        allData[selectedDateStr] = { tasks: [], note: "" };
+    }
+
+    allData[selectedDateStr].note =
+        document.getElementById('modalNote').value;
+
+    syncToCloudDebounced(); // ⭐ 唯一需要的同步
+    renderView();
+    closeModal();
+};
+
 
         window.exportData = () => {
             document.getElementById('exportArea').value = btoa(unescape(encodeURIComponent(JSON.stringify(allData))));
@@ -550,3 +595,4 @@
     </script>
 </body>
 </html>
+
