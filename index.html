@@ -7,7 +7,6 @@
 
     <link rel="icon" href="https://emojiapi.dev/api/v1/sparkles/64.png">
     <meta name="theme-color" content="#eab308">
-    <meta name="description" content="柔和月色風格的月曆代辦系統，支援週 / 月檢視與雲端同步">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -22,10 +21,10 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
         .calendar-day { aspect-ratio: 1 / 1; transition: all 0.3s ease; }
         .task-done { text-decoration: line-through; opacity: 0.5; }
-        .dot { height: 5px; width: 5px; border-radius: 50%; }
+        .dot { height: 6px; width: 6px; border-radius: 50%; }
 
-        /* 配色定義更新：一月與十月均改為嫩黃色系 */
-        .theme-0 { --theme-bg: #fefce8; --theme-primary: #eab308; --theme-soft: #fef9c3; } /* 一月：嫩黃 */
+        /* 配色定義：一月與十月均為嫩黃色系 */
+        .theme-0 { --theme-bg: #fefce8; --theme-primary: #eab308; --theme-soft: #fef9c3; }
         .theme-1 { --theme-bg: #f5f3ff; --theme-primary: #a78bfa; --theme-soft: #ede9fe; } 
         .theme-2 { --theme-bg: #ecfdf5; --theme-primary: #34d399; --theme-soft: #d1fae5; } 
         .theme-3 { --theme-bg: #fff7ed; --theme-primary: #fb923c; --theme-soft: #ffedd5; } 
@@ -34,7 +33,7 @@
         .theme-6 { --theme-bg: #eff6ff; --theme-primary: #60a5fa; --theme-soft: #dbeafe; } 
         .theme-7 { --theme-bg: #fffbeb; --theme-primary: #fbbf24; --theme-soft: #fef3c7; } 
         .theme-8 { --theme-bg: #fafaf9; --theme-primary: #a8a29e; --theme-soft: #f5f5f4; } 
-        .theme-9 { --theme-bg: #fefce8; --theme-primary: #eab308; --theme-soft: #fef9c3; } /* 十月：同步改為嫩黃 */
+        .theme-9 { --theme-bg: #fefce8; --theme-primary: #eab308; --theme-soft: #fef9c3; } 
         .theme-10 { --theme-bg: #f0f9ff; --theme-primary: #38bdf8; --theme-soft: #e0f2fe; } 
         .theme-11 { --theme-bg: #f5f5f4; --theme-primary: #78716c; --theme-soft: #e7e5e4; } 
 
@@ -65,11 +64,6 @@
             text-align: center;
             line-height: 1;
         }
-
-        input[type="time"] {
-            appearance: none;
-            -webkit-appearance: none;
-        }
     </style>
 </head>
 <body class="p-4 md:p-8 dynamic-bg min-h-screen">
@@ -81,7 +75,7 @@
     </div>
 
     <div class="max-w-5xl mx-auto space-y-6">
-        <!-- 視圖切換 -->
+        <!-- 頂部資訊欄 -->
         <div class="flex flex-col items-center gap-4 mb-4">
             <div id="yearLabel" class="px-4 py-1 bg-white/50 backdrop-blur rounded-full text-xs font-black tracking-[0.3em] text-gray-400 shadow-sm border border-white/50">2026</div>
             <div class="inline-flex bg-white/80 backdrop-blur p-1 rounded-2xl shadow-sm border border-white/50">
@@ -90,11 +84,13 @@
             </div>
         </div>
 
-        <!-- 標題與導覽 -->
+        <!-- 導航與計日顯示 -->
         <div class="flex flex-col md:flex-row justify-between items-center bg-white/90 backdrop-blur p-5 rounded-3xl shadow-sm border border-white/50 gap-4">
             <div class="flex items-baseline gap-4">
                 <h2 id="viewTitle" class="text-4xl font-bold tracking-tight text-gray-800 accent-font">January</h2>
-                <div id="yearProgress" class="text-[10px] font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">Day 0 / Remaining 0</div>
+                <div id="yearProgress" class="text-[10px] font-bold text-gray-400 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                    Day 1 / Remaining 364
+                </div>
             </div>
             <div class="flex gap-3">
                 <button onclick="navigate(-1)" class="p-2.5 hover:bg-gray-50 rounded-full transition border border-gray-100 text-gray-400">
@@ -107,7 +103,7 @@
             </div>
         </div>
 
-        <!-- 容器區 -->
+        <!-- 主要顯示容器 -->
         <div id="calendarContainer" class="bg-white/80 backdrop-blur rounded-[2rem] shadow-xl p-6 border border-white/50">
             <div class="calendar-grid mb-4 border-b border-gray-50 pb-2">
                 <div class="text-center py-2 text-[10px] font-black uppercase tracking-widest text-gray-300">Mon</div>
@@ -124,7 +120,7 @@
         <div id="weekContainer" class="hidden grid grid-cols-1 md:grid-cols-7 gap-4"></div>
 
         <!-- 編輯彈窗 -->
-        <div id="dayModal" class="fixed inset-0 bg-black/30 hidden z-50 flex items-center justify-center p-4 backdrop-blur-md transition-all">
+        <div id="dayModal" class="fixed inset-0 bg-black/30 hidden z-50 flex items-center justify-center p-4 backdrop-blur-md">
             <div class="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col border border-white">
                 <div class="dynamic-btn p-7 text-white flex justify-between items-center">
                     <div>
@@ -136,31 +132,31 @@
                     </button>
                 </div>
 
-                <div class="p-8 overflow-y-auto flex-1 bg-white">
+                <div class="p-8 overflow-y-auto flex-1">
                     <div class="mb-8">
-                        <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-4">今日任務</h4>
+                        <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-4">Tasks</h4>
                         <ul id="modalTaskList" class="space-y-3"></ul>
                     </div>
                     <div class="mb-8">
-                        <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-2">備註</h4>
-                        <textarea id="modalNote" rows="2" placeholder="寫下一些筆記..." 
-                                  class="w-full text-sm bg-gray-50 border-none rounded-2xl p-4 focus:ring-2 focus:ring-opacity-50 dynamic-border outline-none transition-all"></textarea>
+                        <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-2">Notes</h4>
+                        <textarea id="modalNote" rows="2" placeholder="Write something..." 
+                                  class="w-full text-sm bg-gray-50 border-none rounded-2xl p-4 focus:ring-2 focus:ring-opacity-50 dynamic-border outline-none"></textarea>
                     </div>
                     <div class="dynamic-soft-bg p-5 rounded-[1.5rem]">
-                        <h4 class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">新增事項 (時間選填)</h4>
+                        <h4 class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">Add Item (Time Optional)</h4>
                         <div class="flex flex-col gap-3">
                             <div class="flex gap-2">
                                 <input type="time" id="modalTime" class="w-32 bg-white border-none rounded-xl px-3 py-2.5 text-sm outline-none shadow-sm text-gray-500 font-medium">
-                                <input type="text" id="modalInput" placeholder="計畫做什麼？" 
+                                <input type="text" id="modalInput" placeholder="What needs to be done?" 
                                        class="flex-1 bg-white border-none rounded-xl px-4 py-2.5 text-sm outline-none shadow-sm">
                             </div>
-                            <button onclick="addTaskFromModal()" class="dynamic-btn text-white w-full py-3 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-all">新增到清單</button>
+                            <button onclick="addTaskFromModal()" class="dynamic-btn text-white w-full py-3 rounded-xl text-xs font-bold shadow-lg active:scale-95 transition-all">Add to List</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="p-6 bg-white border-t border-gray-50 flex justify-end">
-                    <button onclick="saveDayData()" id="saveBtn" class="bg-gray-900 text-white px-10 py-3 rounded-2xl font-bold hover:bg-black transition shadow-xl">儲存並同步</button>
+                    <button onclick="saveDayData()" id="saveBtn" class="bg-gray-900 text-white px-10 py-3 rounded-2xl font-bold hover:bg-black transition shadow-xl">Save & Sync</button>
                 </div>
             </div>
         </div>
@@ -171,9 +167,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // === Firebase 配置 (保持原本邏輯) ===
         const firebaseConfig = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
-
         let app, auth, db, user, appId = "yizzy-planner-v1";
         let allData = {};
         let currentView = 'calendar';
@@ -211,19 +205,33 @@
             });
         }
 
-        window.saveToCloud = async function() {
-            if (!user) return;
-            const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
-            try { await setDoc(userDocRef, { content: allData, lastUpdated: new Date() }); } 
-            catch (err) { console.error(err); }
+        // --- 核心修正：計日功能 ---
+        function updateYearProgress() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const startOfYear = new Date(year, 0, 1); // 1月1日
+            
+            // 計算兩者之間經過的毫秒數
+            const diff = now - startOfYear;
+            // 轉換為天數 (加上 1 是因為從 Day 1 開始計)
+            const currentDay = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+            
+            // 判斷閏年
+            const totalDays = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)) ? 366 : 365;
+            const remaining = totalDays - currentDay;
+
+            const progressEl = document.getElementById('yearProgress');
+            progressEl.innerText = `Day ${currentDay} / Remaining ${remaining}`;
         }
 
         function updateTheme() {
             const month = viewDate.getMonth();
             document.body.className = `p-4 md:p-8 dynamic-bg min-h-screen theme-${month}`;
             document.getElementById('yearLabel').innerText = viewDate.getFullYear();
+            updateYearProgress();
         }
 
+        // --- 以下維持功能邏輯 ---
         window.switchView = function(view) {
             currentView = view;
             renderView();
@@ -251,8 +259,8 @@
             if (!tasks) return [];
             return [...tasks].sort((a, b) => {
                 if (!a.time && !b.time) return 0;
-                if (!a.time) return 1; // 沒時間的往後排
-                if (!b.time) return -1; // 沒時間的往後排
+                if (!a.time) return 1;
+                if (!b.time) return -1;
                 return a.time.localeCompare(b.time);
             });
         }
@@ -352,11 +360,10 @@
 
         function renderModalTasks(tasks) {
             const list = document.getElementById('modalTaskList');
-            list.innerHTML = tasks?.length ? '' : '<li class="text-gray-300 text-xs italic text-center py-6">清單是空的</li>';
-            
+            list.innerHTML = tasks?.length ? '' : '<li class="text-gray-300 text-xs italic text-center py-6">No tasks yet</li>';
             sortTasks(tasks).forEach((task, index) => {
                 const li = document.createElement('li');
-                li.className = "flex items-center justify-between bg-gray-50/50 p-4 rounded-2xl group hover:bg-gray-50 transition-all border border-transparent";
+                li.className = "flex items-center justify-between bg-gray-50/50 p-4 rounded-2xl group hover:bg-gray-50 transition-all";
                 li.innerHTML = `
                     <div class="flex items-center gap-4 cursor-pointer flex-1" onclick="toggleTask(${index})">
                         <div class="w-6 h-6 border-2 rounded-xl flex items-center justify-center transition-all ${task.completed ? 'dynamic-btn border-transparent' : 'border-gray-200 bg-white'}">
@@ -379,44 +386,41 @@
             const timeInput = document.getElementById('modalTime');
             if (!input.value.trim()) return;
             if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
-            
-            allData[selectedDateStr].tasks.push({ 
-                text: input.value, 
-                time: timeInput.value || null, // 沒填寫則為 null
-                completed: false 
-            });
+            allData[selectedDateStr].tasks.push({ text: input.value, time: timeInput.value || null, completed: false });
             input.value = ''; timeInput.value = '';
             renderModalTasks(allData[selectedDateStr].tasks);
         }
 
-        window.toggleTask = (i) => { 
-            // 由於渲染時有排序，切換狀態前需先獲取正確的原始任務索引
+        window.toggleTask = (i) => {
             const sorted = sortTasks(allData[selectedDateStr].tasks);
             const task = sorted[i];
             const originalIndex = allData[selectedDateStr].tasks.findIndex(t => t === task);
-            allData[selectedDateStr].tasks[originalIndex].completed = !allData[selectedDateStr].tasks[originalIndex].completed; 
-            renderModalTasks(allData[selectedDateStr].tasks); 
+            allData[selectedDateStr].tasks[originalIndex].completed = !allData[selectedDateStr].tasks[originalIndex].completed;
+            renderModalTasks(allData[selectedDateStr].tasks);
         }
 
-        window.deleteTask = (i) => { 
+        window.deleteTask = (i) => {
             const sorted = sortTasks(allData[selectedDateStr].tasks);
             const task = sorted[i];
             const originalIndex = allData[selectedDateStr].tasks.findIndex(t => t === task);
-            allData[selectedDateStr].tasks.splice(originalIndex, 1); 
-            renderModalTasks(allData[selectedDateStr].tasks); 
+            allData[selectedDateStr].tasks.splice(originalIndex, 1);
+            renderModalTasks(allData[selectedDateStr].tasks);
         }
-
-        window.closeModal = () => document.getElementById('dayModal').classList.add('hidden');
 
         window.saveDayData = async () => {
             const saveBtn = document.getElementById('saveBtn');
-            saveBtn.innerText = "同步中...";
+            saveBtn.innerText = "Syncing...";
             if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
             allData[selectedDateStr].note = document.getElementById('modalNote').value;
-            await saveToCloud();
-            saveBtn.innerText = "同步完成！";
-            setTimeout(() => { saveBtn.innerText = "儲存並同步"; closeModal(); renderView(); }, 600);
+            if (user) {
+                const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
+                await setDoc(userDocRef, { content: allData, lastUpdated: new Date() });
+            }
+            saveBtn.innerText = "Done!";
+            setTimeout(() => { saveBtn.innerText = "Save & Sync"; closeModal(); renderView(); }, 600);
         }
+
+        window.closeModal = () => document.getElementById('dayModal').classList.add('hidden');
 
         initApp();
         document.getElementById('modalInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') addTaskFromModal(); });
