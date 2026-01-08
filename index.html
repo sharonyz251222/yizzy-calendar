@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yizzy Planner - Global Backup (TW Holidays)</title>
+    <title>Yizzy Planner - Global Backup (TW Holidays + Time/Deadline)</title>
 
     <link rel="icon" href="https://emojiapi.dev/api/v1/sparkles/64.png">
     <meta name="theme-color" content="#eab308">
@@ -61,7 +61,9 @@
             overflow: hidden;
             text-overflow: ellipsis;
             width: 100%;
-            display: block;
+            display: flex;
+            align-items: center;
+            gap: 2px;
             color: #64748b;
         }
 
@@ -79,7 +81,7 @@
     <div id="loading" class="loading-overlay">
         <div class="flex flex-col items-center gap-2">
             <div class="dynamic-text font-bold animate-pulse text-lg tracking-widest">Yizzy Planner</div>
-            <div class="text-xs text-gray-400">正在恢復台灣節日...</div>
+            <div class="text-xs text-gray-400">同步資料中...</div>
         </div>
     </div>
 
@@ -173,6 +175,16 @@
                             <input type="text" id="modalInput" placeholder="Task name..." 
                                    class="w-full bg-white border-none rounded-xl px-4 py-2.5 text-sm outline-none shadow-sm">
                             <div class="flex gap-2">
+                                <div class="flex-1 flex flex-col gap-1">
+                                    <label class="text-[9px] font-bold text-gray-400 pl-2">Time</label>
+                                    <input type="time" id="modalTime" class="bg-white border-none rounded-xl px-3 py-2 text-xs outline-none shadow-sm">
+                                </div>
+                                <div class="flex-1 flex flex-col gap-1">
+                                    <label class="text-[9px] font-bold text-gray-400 pl-2">Deadline</label>
+                                    <input type="date" id="modalDeadline" class="bg-white border-none rounded-xl px-3 py-2 text-xs outline-none shadow-sm">
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-2">
                                 <button id="modalActionBtn" onclick="addTaskFromModal()" class="dynamic-btn text-white flex-1 py-3 rounded-xl text-xs font-bold shadow-lg transition hover:brightness-110">Add to List</button>
                                 <button id="cancelEditBtn" onclick="clearInputFields()" class="hidden bg-gray-200 text-gray-500 px-4 py-3 rounded-xl text-xs font-bold shadow-sm transition hover:bg-gray-300">Cancel</button>
                             </div>
@@ -293,6 +305,9 @@
                 return;
             }
 
+            // 按時間排序
+            pendingItems.sort((a, b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
+
             pendingItems.forEach(item => {
                 const div = document.createElement('div');
                 div.className = "flex items-center gap-2 group cursor-pointer";
@@ -300,7 +315,7 @@
                 div.innerHTML = `
                     <div class="w-1.5 h-1.5 rounded-full dynamic-btn flex-shrink-0"></div>
                     <span class="text-[11px] font-bold text-gray-400 w-5 flex-shrink-0">${item.date}</span>
-                    <span class="text-[11px] text-gray-600 truncate flex-1">${item.text}</span>
+                    <span class="text-[11px] text-gray-600 truncate flex-1">${item.time ? '['+item.time+'] ' : ''}${item.text}</span>
                 `;
                 listEl.appendChild(div);
             });
@@ -360,7 +375,13 @@
 
                 let tasksPreview = '';
                 if (dayData && dayData.tasks) {
-                    tasksPreview = dayData.tasks.slice(0, 2).map(t => `<div class="task-preview-text ${t.completed ? 'opacity-30' : ''}">• ${t.text}</div>`).join('');
+                    const sortedTasks = [...dayData.tasks].sort((a, b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
+                    tasksPreview = sortedTasks.slice(0, 2).map(t => `
+                        <div class="task-preview-text ${t.completed ? 'opacity-30' : ''}">
+                            <span class="font-bold">${t.time || '•'}</span>
+                            <span class="truncate">${t.text}</span>
+                        </div>
+                    `).join('');
                 }
 
                 dayEl.innerHTML = `
@@ -397,12 +418,19 @@
                 card.className = `bg-white/80 backdrop-blur rounded-[2rem] border p-6 flex flex-col md:flex-row gap-6 transition-all hover:shadow-lg cursor-pointer ${dateStr === todayStr ? 'border-white ring-2 dynamic-border' : 'border-white/50'}`;
                 card.onclick = () => openModal(dateStr);
 
-                let tasksHtml = (data.tasks || []).map(t => `
+                const sortedTasks = [...(data.tasks || [])].sort((a, b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
+                let tasksHtml = sortedTasks.map(t => `
                     <div class="flex items-start gap-3 py-2 border-b border-gray-50 last:border-none">
                         <div class="w-5 h-5 rounded-lg flex-shrink-0 border-2 mt-0.5 flex items-center justify-center ${t.completed ? 'dynamic-btn border-transparent' : 'border-gray-100'}">
                             ${t.completed ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4" stroke-linecap="round"/></svg>' : ''}
                         </div>
-                        <div class="text-sm font-medium ${t.completed ? 'task-done text-gray-300' : 'text-gray-700'}">${t.text}</div>
+                        <div class="flex-1">
+                            <div class="text-sm font-medium ${t.completed ? 'task-done text-gray-300' : 'text-gray-700'}">${t.text}</div>
+                            <div class="flex gap-2 mt-0.5">
+                                ${t.time ? `<span class="text-[9px] font-bold text-gray-400 bg-gray-50 px-1.5 rounded">🕒 ${t.time}</span>` : ''}
+                                ${t.deadline ? `<span class="text-[9px] font-bold text-rose-400 bg-rose-50 px-1.5 rounded">🏁 ${t.deadline}</span>` : ''}
+                            </div>
+                        </div>
                     </div>
                 `).join('');
 
@@ -439,17 +467,29 @@
         function renderModalTasks(tasks) {
             const list = document.getElementById('modalTaskList');
             list.innerHTML = tasks.length ? '' : '<li class="text-gray-300 text-xs italic text-center py-6">No tasks added</li>';
-            tasks.forEach((task, index) => {
+            
+            // 排序顯示
+            const sorted = [...tasks].sort((a, b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
+            
+            sorted.forEach((task, index) => {
+                // 找出原始 index 用於刪除與切換
+                const originalIndex = tasks.indexOf(task);
                 const li = document.createElement('li');
-                li.className = `flex items-center justify-between p-4 rounded-2xl group transition-all ${editingIndex === index ? 'ring-2 dynamic-border bg-white shadow-md' : 'bg-gray-50/50'}`;
+                li.className = `flex items-center justify-between p-4 rounded-2xl group transition-all ${editingIndex === originalIndex ? 'ring-2 dynamic-border bg-white shadow-md' : 'bg-gray-50/50'}`;
                 li.innerHTML = `
-                    <div class="flex items-center gap-4 cursor-pointer flex-1" onclick="prepareEditTask(${index})">
-                        <div class="w-6 h-6 border-2 rounded-xl flex items-center justify-center transition-all ${task.completed ? 'dynamic-btn border-transparent' : 'border-gray-200 bg-white'}" onclick="event.stopPropagation(); toggleTask(${index})">
+                    <div class="flex items-center gap-4 cursor-pointer flex-1" onclick="prepareEditTask(${originalIndex})">
+                        <div class="w-6 h-6 border-2 rounded-xl flex items-center justify-center transition-all ${task.completed ? 'dynamic-btn border-transparent' : 'border-gray-200 bg-white'}" onclick="event.stopPropagation(); toggleTask(${originalIndex})">
                             ${task.completed ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3" stroke-linecap="round"/></svg>' : ''}
                         </div>
-                        <span class="text-sm font-semibold ${task.completed ? 'task-done text-gray-300' : 'text-gray-600'}">${task.text}</span>
+                        <div class="flex flex-col">
+                            <span class="text-sm font-semibold ${task.completed ? 'task-done text-gray-300' : 'text-gray-600'}">${task.text}</span>
+                            <div class="flex gap-2">
+                                ${task.time ? `<span class="text-[10px] text-gray-400 font-bold uppercase">Time: ${task.time}</span>` : ''}
+                                ${task.deadline ? `<span class="text-[10px] text-rose-300 font-bold uppercase">Due: ${task.deadline}</span>` : ''}
+                            </div>
+                        </div>
                     </div>
-                    <button onclick="event.stopPropagation(); deleteTask(${index})" class="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1">
+                    <button onclick="event.stopPropagation(); deleteTask(${originalIndex})" class="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
                     </button>`;
                 list.appendChild(li);
@@ -458,10 +498,18 @@
 
         window.addTaskFromModal = () => {
             const input = document.getElementById('modalInput');
+            const timeInput = document.getElementById('modalTime');
+            const deadlineInput = document.getElementById('modalDeadline');
+
             if (!input.value.trim()) return;
             if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
             
-            const taskObj = { text: input.value, completed: editingIndex > -1 ? allData[selectedDateStr].tasks[editingIndex].completed : false };
+            const taskObj = { 
+                text: input.value, 
+                time: timeInput.value || "",
+                deadline: deadlineInput.value || "",
+                completed: editingIndex > -1 ? allData[selectedDateStr].tasks[editingIndex].completed : false 
+            };
             
             if (editingIndex > -1) allData[selectedDateStr].tasks[editingIndex] = taskObj;
             else allData[selectedDateStr].tasks.push(taskObj);
@@ -482,7 +530,10 @@
 
         window.prepareEditTask = (idx) => {
             editingIndex = idx;
-            document.getElementById('modalInput').value = allData[selectedDateStr].tasks[idx].text;
+            const task = allData[selectedDateStr].tasks[idx];
+            document.getElementById('modalInput').value = task.text;
+            document.getElementById('modalTime').value = task.time || "";
+            document.getElementById('modalDeadline').value = task.deadline || "";
             document.getElementById('modalActionBtn').innerText = "Update Task";
             document.getElementById('inputStatusLabel').innerText = "Editing Item";
             document.getElementById('cancelEditBtn').classList.remove('hidden');
@@ -491,6 +542,8 @@
         window.clearInputFields = () => {
             editingIndex = -1;
             document.getElementById('modalInput').value = "";
+            document.getElementById('modalTime').value = "";
+            document.getElementById('modalDeadline').value = "";
             document.getElementById('modalActionBtn').innerText = "Add to List";
             document.getElementById('inputStatusLabel').innerText = "Add Item";
             document.getElementById('cancelEditBtn').classList.add('hidden');
