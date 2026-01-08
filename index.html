@@ -170,20 +170,21 @@
                     </div>
                 </div>
 
-                <div class="p-6 bg-white border-t border-gray-50 flex justify-end gap-2">
-                    <button onclick="exportData()" class="px-5 py-3 rounded-2xl font-bold border border-gray-200 text-gray-400 hover:bg-gray-50 transition text-sm">Backup Text</button>
-                    <button onclick="saveDayData()" id="saveBtn" class="bg-gray-900 text-white px-10 py-3 rounded-2xl font-bold hover:bg-black transition shadow-xl">Save & Sync</button>
+                <div class="p-6 bg-white border-t border-gray-50 flex flex-wrap justify-end gap-2">
+                    <button onclick="exportData()" class="px-4 py-2 rounded-xl font-bold border border-gray-200 text-gray-400 hover:bg-gray-50 transition text-xs">Backup / Restore</button>
+                    <button onclick="saveDayData()" id="saveBtn" class="bg-gray-900 text-white px-8 py-2 rounded-xl font-bold hover:bg-black transition shadow-xl text-sm">Save & Sync</button>
                 </div>
             </div>
         </div>
 
-        <!-- 備份文字顯示彈窗 -->
+        <!-- 備份/還原文字顯示彈窗 -->
         <div id="exportModal" class="fixed inset-0 bg-black/60 hidden z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
             <div class="bg-white rounded-3xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 flex flex-col max-h-[80vh]">
-                <h3 class="text-lg font-bold mb-2">Manual Data Backup</h3>
-                <p class="text-xs text-gray-400 mb-4">Copy the text below and save it to a .txt file on your computer.</p>
-                <textarea id="exportArea" readonly class="flex-1 w-full p-4 bg-gray-50 border-none rounded-2xl mb-6 outline-none text-[10px] font-mono shadow-inner"></textarea>
+                <h3 class="text-lg font-bold mb-2">Data Management</h3>
+                <p class="text-xs text-gray-400 mb-4">Export: Copy the code below.<br>Import: Paste your backup code and click Restore.</p>
+                <textarea id="exportArea" class="flex-1 w-full p-4 bg-gray-50 border-none rounded-2xl mb-6 outline-none text-[10px] font-mono shadow-inner"></textarea>
                 <div class="flex gap-3">
+                    <button onclick="importData()" class="flex-1 py-3 text-xs font-bold bg-blue-500 text-white rounded-xl shadow-lg">Restore from Text</button>
                     <button onclick="document.getElementById('exportModal').classList.add('hidden')" class="flex-1 py-3 text-xs font-bold bg-gray-900 text-white rounded-xl shadow-lg">Done</button>
                 </div>
             </div>
@@ -191,7 +192,7 @@
 
         <!-- 移動事項專用日期選擇框 -->
         <div id="moveModal" class="fixed inset-0 bg-black/60 hidden z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div class="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl border border-gray-100">
+            <div class="bg-white rounded-3xl p-8 w-full max-sm shadow-2xl border border-gray-100">
                 <h3 class="text-lg font-bold mb-4">Move Task To...</h3>
                 <p id="movingTaskText" class="text-xs text-gray-400 mb-6 truncate italic"></p>
                 <input type="date" id="newDateTarget" class="w-full p-4 bg-gray-50 border-none rounded-2xl mb-6 outline-none focus:ring-2 dynamic-border">
@@ -240,6 +241,10 @@
                             allData = docSnap.data().content || {};
                             localStorage.setItem('yizzy_backup_data', JSON.stringify(allData));
                         }
+                        document.getElementById('loading').style.display = 'none';
+                        renderView();
+                    }, (err) => {
+                        console.error("Firestore error:", err);
                         document.getElementById('loading').style.display = 'none';
                         renderView();
                     });
@@ -553,6 +558,25 @@
             const dataStr = JSON.stringify(allData, null, 2);
             document.getElementById('exportArea').value = dataStr;
             document.getElementById('exportModal').classList.remove('hidden');
+        }
+
+        window.importData = async () => {
+            const text = document.getElementById('exportArea').value;
+            try {
+                const parsed = JSON.parse(text);
+                if (typeof parsed !== 'object') throw new Error("Format incorrect");
+                allData = parsed;
+                localStorage.setItem('yizzy_backup_data', JSON.stringify(allData));
+                if (user && firebaseConfig.apiKey) {
+                    const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
+                    await setDoc(userDocRef, { content: allData, lastUpdated: new Date() });
+                }
+                document.getElementById('exportModal').classList.add('hidden');
+                renderView();
+                alert("Data restored successfully!");
+            } catch (e) {
+                alert("Restore failed: Make sure you pasted the complete code.");
+            }
         }
 
         window.closeModal = () => {
