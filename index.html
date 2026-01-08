@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yizzy Planner - Global Backup</title>
+    <title>Yizzy Planner - Global Backup (TW Holidays)</title>
 
     <link rel="icon" href="https://emojiapi.dev/api/v1/sparkles/64.png">
     <meta name="theme-color" content="#eab308">
@@ -64,23 +64,31 @@
             display: block;
             color: #64748b;
         }
+
+        .holiday-text {
+            font-size: 8px;
+            color: #f43f5e;
+            font-weight: bold;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8 dynamic-bg min-h-screen">
     <div id="loading" class="loading-overlay">
         <div class="flex flex-col items-center gap-2">
             <div class="dynamic-text font-bold animate-pulse text-lg tracking-widest">Yizzy Planner</div>
-            <div class="text-xs text-gray-400">正在整理您的精采生活...</div>
+            <div class="text-xs text-gray-400">正在恢復台灣節日...</div>
         </div>
     </div>
 
     <div class="max-w-4xl mx-auto space-y-6">
-        <!-- 頂部資訊欄與全域備份按鈕 -->
+        <!-- 頂部資訊欄 -->
         <div class="flex justify-between items-center mb-4 px-2">
             <div id="yearLabel" class="px-4 py-1 bg-white/50 backdrop-blur rounded-full text-xs font-black tracking-[0.3em] text-gray-400 shadow-sm border border-white/50">2026</div>
             
             <div class="flex gap-2">
-                <!-- 全域備份按鈕 -->
                 <button onclick="exportData()" title="全站備份與還原" class="p-2 bg-white/80 backdrop-blur rounded-xl border border-white/50 shadow-sm hover:bg-white transition-all text-gray-400 hover:text-gray-600">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
@@ -108,7 +116,7 @@
             </div>
         </div>
 
-        <!-- 當月未完成彙整 -->
+        <!-- 月度焦點 (Pending Tasks) -->
         <div id="monthlyFocusContainer" class="bg-white/40 backdrop-blur rounded-[2rem] p-6 border border-white/50 shadow-sm">
             <div class="flex items-center gap-2 mb-4">
                 <div class="p-1.5 dynamic-btn rounded-lg">
@@ -119,7 +127,7 @@
             <div id="monthlyFocusList" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2"></div>
         </div>
 
-        <!-- 主要顯示容器 -->
+        <!-- 月曆視圖 -->
         <div id="calendarContainer" class="bg-white/80 backdrop-blur rounded-[2rem] shadow-xl p-6 border border-white/50">
             <div class="calendar-grid mb-4 border-b border-gray-50 pb-2">
                 <div class="text-center py-2 text-[10px] font-black uppercase tracking-widest text-gray-300">Mon</div>
@@ -133,6 +141,7 @@
             <div id="calendarDays" class="calendar-grid gap-2"></div>
         </div>
 
+        <!-- 週視圖 -->
         <div id="weekContainer" class="hidden flex flex-col gap-4 pb-12"></div>
 
         <!-- 編輯彈窗 -->
@@ -150,7 +159,7 @@
 
                 <div class="p-8 overflow-y-auto flex-1">
                     <div class="mb-8">
-                        <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-4">Tasks (Click to Edit / ⮕ Move)</h4>
+                        <h4 class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] mb-4">Tasks (Click to Edit)</h4>
                         <ul id="modalTaskList" class="space-y-3"></ul>
                     </div>
                     <div class="mb-8">
@@ -161,10 +170,6 @@
                     <div class="dynamic-soft-bg p-5 rounded-[1.5rem] border border-white">
                         <h4 id="inputStatusLabel" class="text-[10px] font-black dynamic-text uppercase tracking-[0.2em] mb-3">Add Item</h4>
                         <div class="flex flex-col gap-3">
-                            <div class="flex gap-2">
-                                <input type="time" id="modalTime" class="w-32 bg-white border-none rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm">
-                                <input type="date" id="modalDeadline" class="flex-1 bg-white border-none rounded-xl px-3 py-2.5 text-xs outline-none shadow-sm">
-                            </div>
                             <input type="text" id="modalInput" placeholder="Task name..." 
                                    class="w-full bg-white border-none rounded-xl px-4 py-2.5 text-sm outline-none shadow-sm">
                             <div class="flex gap-2">
@@ -181,7 +186,7 @@
             </div>
         </div>
 
-        <!-- 全域備份/還原彈窗 -->
+        <!-- 備份/還原彈窗 -->
         <div id="exportModal" class="fixed inset-0 bg-black/60 hidden z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
             <div class="bg-white rounded-3xl p-8 w-full max-w-lg shadow-2xl border border-gray-100 flex flex-col max-h-[85vh]">
                 <div class="flex justify-between items-center mb-4">
@@ -205,19 +210,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- 移動事項視窗 -->
-        <div id="moveModal" class="fixed inset-0 bg-black/60 hidden z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div class="bg-white rounded-3xl p-8 w-full max-sm shadow-2xl border border-gray-100">
-                <h3 class="text-lg font-bold mb-4">Move Task To...</h3>
-                <p id="movingTaskText" class="text-xs text-gray-400 mb-6 truncate italic"></p>
-                <input type="date" id="newDateTarget" class="w-full p-4 bg-gray-50 border-none rounded-2xl mb-6 outline-none focus:ring-2 dynamic-border">
-                <div class="flex gap-3">
-                    <button onclick="closeMoveModal()" class="flex-1 py-3 text-xs font-bold text-gray-400 hover:bg-gray-50 rounded-xl transition">Cancel</button>
-                    <button onclick="confirmMoveTask()" class="flex-1 py-3 text-xs font-bold dynamic-btn text-white rounded-xl shadow-lg">Confirm Move</button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script type="module">
@@ -231,10 +223,15 @@
         let currentView = 'calendar';
         let viewDate = new Date();
         let selectedDateStr = "";
-        let editingIndex = -1; 
-        let movingIndex = -1;
+        let editingIndex = -1;
 
-        const holidays2026 = { "2026-0-1": "元旦", "2026-1-16": "除夕", "2026-1-17": "春節", "2026-1-28": "和平紀念日" };
+        // 台灣國定假日資料 (2024-2026)
+        const HOLIDAYS_DATA = {
+            "2024-0-1": "元旦", "2024-1-8": "小年夜", "2024-1-9": "除夕", "2024-1-10": "春節", "2024-1-11": "春節", "2024-1-12": "春節", "2024-1-28": "二二八紀念日", "2024-3-4": "兒童節", "2024-3-5": "清明節", "2024-5-10": "端午節", "2024-8-17": "中秋節", "2024-9-10": "國慶日",
+            "2025-0-1": "元旦", "2025-0-27": "小年夜", "2025-0-28": "除夕", "2025-0-29": "春節", "2025-0-30": "春節", "2025-0-31": "春節", "2025-1-28": "二二八紀念日", "2025-3-4": "兒童節", "2025-3-5": "清明節", "2025-4-31": "端午節", "2025-9-6": "中秋節", "2025-9-10": "國慶日",
+            "2026-0-1": "元旦", "2026-1-16": "小年夜", "2026-1-17": "除夕", "2026-1-18": "春節", "2026-1-19": "春節", "2026-1-20": "春節", "2026-1-28": "二二八紀念日", "2026-3-4": "兒童節", "2026-3-5": "清明節", "2026-5-19": "端午節", "2026-8-25": "中秋節", "2026-9-10": "國慶日"
+        };
+
         const monthNamesEng = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         const weekDayEng = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -257,9 +254,6 @@
                             allData = docSnap.data().content || {};
                             localStorage.setItem('yizzy_backup_data', JSON.stringify(allData));
                         }
-                        document.getElementById('loading').style.display = 'none';
-                        renderView();
-                    }, (err) => {
                         document.getElementById('loading').style.display = 'none';
                         renderView();
                     });
@@ -295,7 +289,7 @@
             }
 
             if (pendingItems.length === 0) {
-                listEl.innerHTML = '<p class="text-[10px] text-gray-300 italic py-2">All settled for this month! ✨</p>';
+                listEl.innerHTML = '<p class="text-[10px] text-gray-300 italic py-2">All settled! ✨</p>';
                 return;
             }
 
@@ -349,16 +343,20 @@
             container.innerHTML = '';
 
             for (let i = 0; i < firstDay; i++) container.appendChild(document.createElement('div'));
+            
             const tDate = new Date();
             const todayStr = `${tDate.getFullYear()}-${tDate.getMonth()}-${tDate.getDate()}`;
 
             for (let d = 1; d <= daysInMonth; d++) {
                 const dateStr = `${year}-${month}-${d}`;
-                const holiday = holidays2026[dateStr];
+                const holidayName = HOLIDAYS_DATA[dateStr];
                 const dayData = allData[dateStr];
+                const isToday = dateStr === todayStr;
+                const isWeekend = (new Date(year, month, d).getDay() % 6 === 0);
+
                 const dayEl = document.createElement('div');
-                dayEl.className = `calendar-day group relative ${(new Date(year,month,d).getDay() % 6 === 0) ? 'bg-gray-100/40' : 'bg-white/50'} hover:bg-white cursor-pointer p-1.5 flex flex-col transition-all rounded-2xl shadow-sm border border-transparent overflow-hidden`;
-                if (dateStr === todayStr) dayEl.classList.add('ring-2', 'ring-white', 'dynamic-border', 'bg-white');
+                dayEl.className = `calendar-day group relative ${isWeekend ? 'bg-gray-100/40' : 'bg-white/50'} hover:bg-white cursor-pointer p-1.5 flex flex-col transition-all rounded-2xl shadow-sm border border-transparent overflow-hidden`;
+                if (isToday) dayEl.classList.add('ring-2', 'ring-white', 'dynamic-border', 'bg-white');
 
                 let tasksPreview = '';
                 if (dayData && dayData.tasks) {
@@ -366,11 +364,12 @@
                 }
 
                 dayEl.innerHTML = `
-                    <div class="flex justify-between items-start mb-1">
-                        <span class="text-sm font-bold ${holiday ? 'text-rose-400' : (dateStr === todayStr ? 'dynamic-text' : 'text-gray-600')}">${d}</span>
+                    <div class="flex justify-between items-start mb-0.5">
+                        <span class="text-sm font-bold ${holidayName ? 'text-rose-500' : (isToday ? 'dynamic-text' : 'text-gray-600')}">${d}</span>
                         ${dayData && (dayData.tasks?.length > 0) ? '<span class="dot dynamic-btn"></span>' : ''}
                     </div>
-                    <div class="space-y-0.5">${tasksPreview}</div>
+                    ${holidayName ? `<div class="holiday-text">${holidayName}</div>` : ''}
+                    <div class="mt-1 space-y-0.5">${tasksPreview}</div>
                 `;
                 dayEl.onclick = () => openModal(dateStr);
                 container.appendChild(dayEl);
@@ -383,6 +382,7 @@
             startOfWeek.setDate(viewDate.getDate() - dayOffset);
             const container = document.getElementById('weekContainer');
             container.innerHTML = '';
+            
             const tDate = new Date();
             const todayStr = `${tDate.getFullYear()}-${tDate.getMonth()}-${tDate.getDate()}`;
 
@@ -390,7 +390,7 @@
                 const day = new Date(startOfWeek);
                 day.setDate(startOfWeek.getDate() + i);
                 const dateStr = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
-                const holiday = holidays2026[dateStr];
+                const holidayName = HOLIDAYS_DATA[dateStr];
                 const data = allData[dateStr] || { tasks: [], note: "" };
 
                 const card = document.createElement('div');
@@ -402,16 +402,17 @@
                         <div class="w-5 h-5 rounded-lg flex-shrink-0 border-2 mt-0.5 flex items-center justify-center ${t.completed ? 'dynamic-btn border-transparent' : 'border-gray-100'}">
                             ${t.completed ? '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="4" stroke-linecap="round"/></svg>' : ''}
                         </div>
-                        <div class="flex-1">
-                            <div class="text-sm font-medium ${t.completed ? 'task-done text-gray-300' : 'text-gray-700'}">${t.text}</div>
-                        </div>
+                        <div class="text-sm font-medium ${t.completed ? 'task-done text-gray-300' : 'text-gray-700'}">${t.text}</div>
                     </div>
                 `).join('');
 
                 card.innerHTML = `
                     <div class="flex md:flex-col items-center md:items-start gap-4 md:w-32 flex-shrink-0">
                         <div class="text-[10px] font-black text-gray-300 uppercase tracking-widest">${weekDayEng[day.getDay()].slice(0,3)}</div>
-                        <div class="text-3xl font-black ${dateStr === todayStr ? 'dynamic-text' : 'text-gray-700'}">${day.getDate()}</div>
+                        <div class="flex flex-col">
+                            <div class="text-3xl font-black ${holidayName ? 'text-rose-500' : (dateStr === todayStr ? 'dynamic-text' : 'text-gray-700')}">${day.getDate()}</div>
+                            ${holidayName ? `<div class="text-[10px] font-bold text-rose-400 mt-[-4px]">${holidayName}</div>` : ''}
+                        </div>
                     </div>
                     <div class="flex-1">${tasksHtml || '<div class="text-gray-200 text-xs italic py-2">Nothing scheduled</div>'}</div>
                 `;
@@ -419,17 +420,21 @@
             }
         }
 
+        // 彈窗與數據處理邏輯
         window.openModal = (dateStr) => {
             selectedDateStr = dateStr;
             clearInputFields();
             const [y, m, d] = dateStr.split('-');
-            document.getElementById('modalDateTitle').innerText = `${monthNamesEng[m]} ${d}, ${y}`;
+            const holiday = HOLIDAYS_DATA[dateStr];
+            document.getElementById('modalDateTitle').innerText = `${monthNamesEng[m]} ${d}, ${y}${holiday ? ' - ' + holiday : ''}`;
             document.getElementById('modalDayOfWeek').innerText = weekDayEng[new Date(y, m, d).getDay()];
             const data = allData[selectedDateStr] || { tasks: [], note: "" };
             document.getElementById('modalNote').value = data.note || "";
             renderModalTasks(data.tasks || []);
             document.getElementById('dayModal').classList.remove('hidden');
         }
+
+        window.closeModal = () => document.getElementById('dayModal').classList.add('hidden');
 
         function renderModalTasks(tasks) {
             const list = document.getElementById('modalTaskList');
@@ -438,22 +443,15 @@
                 const li = document.createElement('li');
                 li.className = `flex items-center justify-between p-4 rounded-2xl group transition-all ${editingIndex === index ? 'ring-2 dynamic-border bg-white shadow-md' : 'bg-gray-50/50'}`;
                 li.innerHTML = `
-                    <div class="flex items-center gap-4 cursor-pointer flex-1 min-w-0">
+                    <div class="flex items-center gap-4 cursor-pointer flex-1" onclick="prepareEditTask(${index})">
                         <div class="w-6 h-6 border-2 rounded-xl flex items-center justify-center transition-all ${task.completed ? 'dynamic-btn border-transparent' : 'border-gray-200 bg-white'}" onclick="event.stopPropagation(); toggleTask(${index})">
                             ${task.completed ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="3" stroke-linecap="round"/></svg>' : ''}
                         </div>
-                        <div class="flex flex-col flex-1 min-w-0" onclick="prepareEditTask(${index})">
-                            <span class="text-sm font-semibold truncate ${task.completed ? 'task-done text-gray-300' : 'text-gray-600'}">${task.text}</span>
-                        </div>
+                        <span class="text-sm font-semibold ${task.completed ? 'task-done text-gray-300' : 'text-gray-600'}">${task.text}</span>
                     </div>
-                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                        <button onclick="event.stopPropagation(); startMoveTask(${index})" class="text-gray-300 hover:text-blue-500 p-1">
-                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </button>
-                        <button onclick="event.stopPropagation(); deleteTask(${index})" class="text-gray-300 hover:text-red-400 p-1">
-                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
-                        </button>
-                    </div>`;
+                    <button onclick="event.stopPropagation(); deleteTask(${index})" class="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke-width="2"/></svg>
+                    </button>`;
                 list.appendChild(li);
             });
         }
@@ -462,13 +460,40 @@
             const input = document.getElementById('modalInput');
             if (!input.value.trim()) return;
             if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
-            const taskData = { 
-                text: input.value, 
-                completed: editingIndex > -1 ? allData[selectedDateStr].tasks[editingIndex].completed : false 
-            };
-            if (editingIndex > -1) allData[selectedDateStr].tasks[editingIndex] = taskData;
-            else allData[selectedDateStr].tasks.push(taskData);
+            
+            const taskObj = { text: input.value, completed: editingIndex > -1 ? allData[selectedDateStr].tasks[editingIndex].completed : false };
+            
+            if (editingIndex > -1) allData[selectedDateStr].tasks[editingIndex] = taskObj;
+            else allData[selectedDateStr].tasks.push(taskObj);
+            
             clearInputFields();
+            renderModalTasks(allData[selectedDateStr].tasks);
+        }
+
+        window.toggleTask = (idx) => {
+            allData[selectedDateStr].tasks[idx].completed = !allData[selectedDateStr].tasks[idx].completed;
+            renderModalTasks(allData[selectedDateStr].tasks);
+        }
+
+        window.deleteTask = (idx) => {
+            allData[selectedDateStr].tasks.splice(idx, 1);
+            renderModalTasks(allData[selectedDateStr].tasks);
+        }
+
+        window.prepareEditTask = (idx) => {
+            editingIndex = idx;
+            document.getElementById('modalInput').value = allData[selectedDateStr].tasks[idx].text;
+            document.getElementById('modalActionBtn').innerText = "Update Task";
+            document.getElementById('inputStatusLabel').innerText = "Editing Item";
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+        }
+
+        window.clearInputFields = () => {
+            editingIndex = -1;
+            document.getElementById('modalInput').value = "";
+            document.getElementById('modalActionBtn').innerText = "Add to List";
+            document.getElementById('inputStatusLabel').innerText = "Add Item";
+            document.getElementById('cancelEditBtn').classList.add('hidden');
         }
 
         window.saveDayData = async () => {
@@ -476,15 +501,23 @@
             saveBtn.innerText = "Saving...";
             if (!allData[selectedDateStr]) allData[selectedDateStr] = { tasks: [], note: "" };
             allData[selectedDateStr].note = document.getElementById('modalNote').value;
+            
             localStorage.setItem('yizzy_backup_data', JSON.stringify(allData));
+            
             if (user && firebaseConfig.apiKey) {
                 const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
                 await setDoc(userDocRef, { content: allData, lastUpdated: new Date() });
             }
+            
             saveBtn.innerText = "Saved!";
-            setTimeout(() => { saveBtn.innerText = "Save & Sync"; closeModal(); renderView(); }, 600);
+            setTimeout(() => { 
+                saveBtn.innerText = "Save & Sync"; 
+                closeModal(); 
+                renderView(); 
+            }, 600);
         }
 
+        // 備份邏輯
         window.exportData = () => {
             const dataStr = JSON.stringify(allData, null, 2);
             document.getElementById('exportArea').value = dataStr;
@@ -495,7 +528,9 @@
             const area = document.getElementById('exportArea');
             area.select();
             document.execCommand('copy');
-            alert("備份代碼已複製到剪貼簿！");
+            const btn = event.target;
+            btn.innerText = "已複製！";
+            setTimeout(() => btn.innerText = "複製備份代碼", 2000);
         }
 
         window.importData = async () => {
@@ -503,45 +538,21 @@
             if (!text.trim()) return;
             try {
                 const parsed = JSON.parse(text);
-                if (confirm("確定要還原全站資料嗎？這將會覆蓋您目前的資料。")) {
+                if (confirm("這將覆蓋現有所有資料，確定要還原嗎？")) {
                     allData = parsed;
                     localStorage.setItem('yizzy_backup_data', JSON.stringify(allData));
                     if (user && firebaseConfig.apiKey) {
                         const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
                         await setDoc(userDocRef, { content: allData, lastUpdated: new Date() });
                     }
-                    document.getElementById('exportModal').classList.add('hidden');
-                    renderView();
-                    alert("還原成功！");
+                    location.reload();
                 }
             } catch (e) {
-                alert("還原失敗：代碼格式不正確，請確認您貼上的是完整的備份代碼。");
+                alert("代碼格式錯誤，請檢查。");
             }
         }
 
-        window.toggleTask = (i) => {
-            allData[selectedDateStr].tasks[i].completed = !allData[selectedDateStr].tasks[i].completed;
-            renderModalTasks(allData[selectedDateStr].tasks);
-        }
-
-        window.deleteTask = (i) => {
-            allData[selectedDateStr].tasks.splice(i, 1);
-            renderModalTasks(allData[selectedDateStr].tasks);
-        }
-
-        window.clearInputFields = () => {
-            editingIndex = -1;
-            document.getElementById('modalInput').value = '';
-            document.getElementById('inputStatusLabel').innerText = "Add Item";
-            document.getElementById('modalActionBtn').innerText = "Add to List";
-            document.getElementById('cancelEditBtn').classList.add('hidden');
-            if (allData[selectedDateStr]) renderModalTasks(allData[selectedDateStr].tasks);
-        }
-
-        window.closeModal = () => { document.getElementById('dayModal').classList.add('hidden'); clearInputFields(); }
-
-        initApp();
-        document.getElementById('modalInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') addTaskFromModal(); });
+        window.onload = initApp;
     </script>
 </body>
 </html>
