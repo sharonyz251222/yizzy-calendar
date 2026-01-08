@@ -81,7 +81,7 @@
     <div id="loading" class="loading-overlay">
         <div class="flex flex-col items-center gap-2">
             <div class="dynamic-text font-bold animate-pulse text-lg tracking-widest">Yizzy Planner</div>
-            <div class="text-xs text-gray-400">同步資料中...</div>
+            <div id="loadingStatus" class="text-xs text-gray-400">正在嘗試與雲端同步...</div>
         </div>
     </div>
 
@@ -229,7 +229,16 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
+        // 更新後的 Firebase 設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyBQ54-vdi5kPa4w8uhGO2DQrKOY_L0duCg",
+            authDomain: "yizzyplanner.firebaseapp.com",
+            projectId: "yizzyplanner",
+            storageBucket: "yizzyplanner.firebasestorage.app",
+            messagingSenderId: "270215767860",
+            appId: "1:270215767860:web:e5a4db8eafc215bfc02761"
+        };
+
         let app, auth, db, user, appId = "yizzy-planner-v2";
         let allData = JSON.parse(localStorage.getItem('yizzy_backup_data') || '{}'); 
         let currentView = 'calendar';
@@ -248,29 +257,46 @@
         const weekDayEng = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
         async function initApp() {
-            if (!firebaseConfig.apiKey) {
+            const loadingStatus = document.getElementById('loadingStatus');
+            
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // 嘗試登入，若專案未設定好則忽略錯誤進入本地模式
+                await signInAnonymously(auth).catch(err => {
+                    console.warn("Firebase Auth 未啟動或設定錯誤，進入本地儲存模式。 Error:", err.code);
+                    loadingStatus.innerText = "雲端尚未啟動，進入本地模式模式...";
+                    setTimeout(() => {
+                         document.getElementById('loading').style.display = 'none';
+                         renderView();
+                    }, 1000);
+                });
+
+                onAuthStateChanged(auth, (u) => {
+                    user = u;
+                    if (user) {
+                        const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
+                        onSnapshot(userDocRef, (docSnap) => {
+                            if (docSnap.exists()) {
+                                allData = docSnap.data().content || {};
+                                localStorage.setItem('yizzy_backup_data', JSON.stringify(allData));
+                            }
+                            document.getElementById('loading').style.display = 'none';
+                            renderView();
+                        }, (error) => {
+                            console.error("Firestore 監聽失敗:", error);
+                            document.getElementById('loading').style.display = 'none';
+                            renderView();
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase 初始化失敗:", error);
                 document.getElementById('loading').style.display = 'none';
                 renderView();
-                return;
             }
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            await signInAnonymously(auth);
-            onAuthStateChanged(auth, (u) => {
-                user = u;
-                if (user) {
-                    const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
-                    onSnapshot(userDocRef, (docSnap) => {
-                        if (docSnap.exists()) {
-                            allData = docSnap.data().content || {};
-                            localStorage.setItem('yizzy_backup_data', JSON.stringify(allData));
-                        }
-                        document.getElementById('loading').style.display = 'none';
-                        renderView();
-                    });
-                }
-            });
         }
 
         function updateYearProgress() {
@@ -305,7 +331,6 @@
                 return;
             }
 
-            // 按時間排序
             pendingItems.sort((a, b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
 
             pendingItems.forEach(item => {
@@ -448,7 +473,6 @@
             }
         }
 
-        // 彈窗與數據處理邏輯
         window.openModal = (dateStr) => {
             selectedDateStr = dateStr;
             clearInputFields();
@@ -468,11 +492,9 @@
             const list = document.getElementById('modalTaskList');
             list.innerHTML = tasks.length ? '' : '<li class="text-gray-300 text-xs italic text-center py-6">No tasks added</li>';
             
-            // 排序顯示
             const sorted = [...tasks].sort((a, b) => (a.time || '23:59').localeCompare(b.time || '23:59'));
             
             sorted.forEach((task, index) => {
-                // 找出原始 index 用於刪除與切換
                 const originalIndex = tasks.indexOf(task);
                 const li = document.createElement('li');
                 li.className = `flex items-center justify-between p-4 rounded-2xl group transition-all ${editingIndex === originalIndex ? 'ring-2 dynamic-border bg-white shadow-md' : 'bg-gray-50/50'}`;
@@ -557,9 +579,14 @@
             
             localStorage.setItem('yizzy_backup_data', JSON.stringify(allData));
             
-            if (user && firebaseConfig.apiKey) {
-                const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
-                await setDoc(userDocRef, { content: allData, lastUpdated: new Date() });
+            // 只有在登入成功的情況下才寫入雲端
+            if (user && db) {
+                try {
+                    const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
+                    await setDoc(userDocRef, { content: allData, lastUpdated: new Date() });
+                } catch (e) {
+                    console.error("雲端存檔失敗 (權限可能受限):", e);
+                }
             }
             
             saveBtn.innerText = "Saved!";
@@ -570,7 +597,6 @@
             }, 600);
         }
 
-        // 備份邏輯
         window.exportData = () => {
             const dataStr = JSON.stringify(allData, null, 2);
             document.getElementById('exportArea').value = dataStr;
@@ -594,7 +620,7 @@
                 if (confirm("這將覆蓋現有所有資料，確定要還原嗎？")) {
                     allData = parsed;
                     localStorage.setItem('yizzy_backup_data', JSON.stringify(allData));
-                    if (user && firebaseConfig.apiKey) {
+                    if (user && db) {
                         const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'settings', 'mainData');
                         await setDoc(userDocRef, { content: allData, lastUpdated: new Date() });
                     }
