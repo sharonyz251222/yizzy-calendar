@@ -540,5 +540,57 @@
             } catch (e) { alert("代碼錯誤"); }
         };
     </script>
+    <!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } 
+    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, query, where } 
+    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  // 🔐 Firebase 設定（用你自己的）
+  const firebaseConfig = {
+    apiKey: "AIzaSyDD9FRRoFVTGvQ1DVxSBTtxQnDN5aQw6L4",
+    authDomain: "yizzy-calendar.firebaseapp.com",
+    projectId: "yizzy-calendar",
+    storageBucket: "yizzy-calendar.appspot.com",
+    messagingSenderId: "31957841418",
+    appId: "1:31957841418:web:a284ace128d1ef2bccd1f3"
+  };
+
+  // 初始化
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Google 登入
+  const provider = new GoogleAuthProvider();
+
+  // 👤 監聽登入狀態
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      console.log("登入成功：", user.email);
+      // 之後這裡會載入日曆資料
+    } else {
+      console.log("尚未登入");
+    }
+  });
+
+  // 👉 讓 HTML 可以呼叫（很重要）
+  window.loginWithGoogle = async () => {
+    await signInWithPopup(auth, provider);
+  };
+
+  window.logout = async () => {
+    await signOut(auth);
+  };
+</script>
+
 </body>
+    <div style="position: fixed; top: 10px; right: 10px; z-index: 9999;">
+  <button onclick="loginWithGoogle()">Google 登入</button>
+  <button onclick="logout()">登出</button>
+</div>
+
 </html>
+
