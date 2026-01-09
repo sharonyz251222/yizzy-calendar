@@ -76,18 +76,15 @@ export default function App() {
     title: '', note: '', time: '', deadline: '', date: ''
   });
 
-  useEffect(() => {
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
+const loginWithGoogle = async () => {
+  await signInWithPopup(auth, provider);
+};
+
+useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, setUser);
+  return () => unsubscribe();
+}, []);
+
 
   useEffect(() => {
     if (!user) return;
@@ -199,6 +196,22 @@ export default function App() {
   const monthOverviewTasks = tasks.filter(t => t.date.startsWith(`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`));
 
   return (
+        <>
+    {!user && (
+      <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/20">
+        <button
+          onClick={loginWithGoogle}
+          className="px-6 py-3 bg-white rounded-xl shadow font-bold"
+        >
+          Google 登入
+        </button>
+      </div>
+    )}
+
+    <div className={`min-h-screen ${theme.bg} transition-colors duration-500 font-sans text-sm p-4 md:p-8`}>
+      ...
+    </div>
+  </>
     <div className={`min-h-screen ${theme.bg} transition-colors duration-500 font-sans text-sm p-4 md:p-8 selection:bg-white selection:text-black`}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600&family=Noto+Sans+TC:wght@400;500&display=swap');
@@ -449,3 +462,4 @@ export default function App() {
     </div>
   );
 }
+
